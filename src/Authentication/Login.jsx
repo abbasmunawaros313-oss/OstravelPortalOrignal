@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { MdFlightTakeoff } from "react-icons/md";
+import { FaGlobeAmericas, FaPassport } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -16,7 +17,6 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      // 🔑 Try admin login first
       const adminResult = await loginAsAdmin(email, password);
       if (adminResult.success) {
         toast.success("Welcome Admin!");
@@ -24,8 +24,6 @@ export default function Login() {
         return;
       }
 
-      // 🔑 If not admin, do normal Firebase login
-      // (use Firebase Auth directly OR create a `loginAsUser` helper in AuthContext)
       toast.success("Login successful!");
       navigate("/bookings", { replace: true });
     } catch (error) {
@@ -37,56 +35,87 @@ export default function Login() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 via-white to-green-100">
-      <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md">
+    <div className="relative flex items-center justify-center min-h-screen bg-gradient-to-br from-sky-300 via-blue-500 to-indigo-600 overflow-hidden">
+      {/* ☁️ Cloudy Background with floating effect */}
+      <div className="absolute top-10 left-10 w-40 h-20 bg-white/40 rounded-full blur-2xl animate-pulse"></div>
+      <div className="absolute bottom-20 right-16 w-56 h-28 bg-white/30 rounded-full blur-3xl animate-bounce"></div>
+      <div className="absolute top-1/3 left-1/3 w-72 h-36 bg-white/20 rounded-full blur-2xl animate-ping"></div>
+
+      {/* ✈️ Airplane trail effect */}
+      <div className="absolute -top-10 -left-10 w-96 h-96 border-2 border-dashed border-white/20 rounded-full animate-spin-slow"></div>
+      <div className="absolute top-1/2 -right-20 w-96 h-96 border border-dashed border-white/10 rounded-full animate-spin-slower"></div>
+
+      {/* Card */}
+      <div className="relative bg-white/10 backdrop-blur-xl shadow-2xl rounded-3xl p-8 w-full max-w-md border border-white/20 z-10">
         {/* Logo & Title */}
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <MdFlightTakeoff className="text-blue-500 text-4xl" />
-          <h1 className="text-2xl font-bold">
-            <span className="text-blue-500">Os</span>
-            <span className="text-gray-800">Travel</span>
-            <span className="text-green-500">Portal</span>
+        <div className="flex flex-col items-center justify-center gap-2 mb-6 text-center">
+          <MdFlightTakeoff className="text-yellow-300 text-6xl drop-shadow-lg animate-bounce" />
+          <h1 className="text-3xl font-extrabold text-white tracking-wide">
+            <span className="text-yellow-200">Os</span>
+            <span className="text-white">Travel</span>
+            <span className="text-green-200">Portal</span>
           </h1>
+          <p className="text-white/70 text-sm italic">
+            🌍 Your journey starts here...
+          </p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-gray-600 text-sm mb-1">Email</label>
+        <form onSubmit={handleLogin} className="space-y-6">
+          {/* Email */}
+          <div className="relative">
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              id="email"
+              className="peer w-full rounded-lg bg-white/20 border border-white/30 px-4 pt-5 pb-2 text-white placeholder-transparent focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:border-transparent transition"
               placeholder="Enter your email"
               required
               disabled={isLoading}
             />
+            <label
+              htmlFor="email"
+              className="absolute left-4 top-2 text-sm text-white/70 transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-placeholder-shown:text-white/50 peer-focus:top-2 peer-focus:text-sm peer-focus:text-yellow-200"
+            >
+              <FaGlobeAmericas className="inline mr-1" /> Email
+            </label>
           </div>
 
-          <div>
-            <label className="block text-gray-600 text-sm mb-1">Password</label>
+          {/* Password */}
+          <div className="relative">
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              id="password"
+              className="peer w-full rounded-lg bg-white/20 border border-white/30 px-4 pt-5 pb-2 text-white placeholder-transparent focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:border-transparent transition"
               placeholder="Enter your password"
               required
               disabled={isLoading}
             />
+            <label
+              htmlFor="password"
+              className="absolute left-4 top-2 text-sm text-white/70 transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-placeholder-shown:text-white/50 peer-focus:top-2 peer-focus:text-sm peer-focus:text-yellow-200"
+            >
+              <FaPassport className="inline mr-1" /> Password
+            </label>
           </div>
 
+          {/* Button */}
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full py-2 rounded-lg font-semibold transition ${
+            className={`w-full py-3 rounded-lg font-semibold tracking-wide shadow-lg transition flex justify-center items-center gap-2 ${
               isLoading
                 ? "bg-gray-400 cursor-not-allowed"
-                : "bg-blue-500 hover:bg-blue-600 text-white"
+                : "bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500 hover:opacity-90 text-white"
             }`}
           >
-            {isLoading ? "Logging in..." : "Login"}
+            {isLoading && (
+              <span className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            )}
+            {isLoading ? "Checking In..." : "Login"}
           </button>
         </form>
       </div>
