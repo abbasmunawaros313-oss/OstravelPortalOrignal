@@ -9,6 +9,7 @@ import {
   doc,
   addDoc,
   orderBy,
+  getDoc,
   getDocs,
   where,
 } from "firebase/firestore";
@@ -101,7 +102,7 @@ export default function DeletedVisas() {
     try {
       // Verify the record belongs to the current user before deleting
       const docRef = doc(db, "deletedBookings", deletedId);
-      const docSnap = await getDocs(docRef);
+      const docSnap = await getDoc(docRef);
       
       if (docSnap.exists() && docSnap.data().userId !== user.uid) {
         toast.error("You can only delete your own records.");
