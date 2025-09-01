@@ -6,6 +6,7 @@ import autoTable from "jspdf-autotable";
 import toast from "react-hot-toast";
 import { MdSearch, MdBusiness, MdEmail, MdPhone, MdLocationOn, MdPrint } from "react-icons/md";
 import { useAuth } from "../context/AuthContext";
+import Footer from "../Components/Footer";
 
 export default function Report() {
   const { user } = useAuth();
@@ -166,6 +167,7 @@ export default function Report() {
   }
 
   return (
+    <>
     <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-blue-50 via-white to-green-50 p-8">
       <div className="bg-white/80 backdrop-blur-lg shadow-xl rounded-2xl p-8 w-full max-w-4xl border border-gray-100">
         {/* Header Section */}
@@ -312,5 +314,7 @@ export default function Report() {
         </div>
       </div>
     </div>
+    <Footer/>
+    </>
   );
 }

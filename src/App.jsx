@@ -1,17 +1,20 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+
 import Login from "./Authentication/Login";
 import Bookings from "./Pages/Bookings";
 import ApprovedVisas from "./Pages/ApprovedVisas";
-import DeletedVisas from "./Pages/DeletedVisas";
+import DeletedVisas from "./Pages/DeletedVisas"
 import Countries from "./Pages/Countries";
 import Search from "./Pages/Search";
 import Reports from "./Pages/Reports";
 import AdminLogin from "./Pages/AdminLogin";
 import AdminDashboard from "./Pages/AdminDashboard";
 import Navbar from "./Components/Navbar";
+import Home from "./Pages/Home";
 
+// 🔒 Protected Route
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
@@ -26,29 +29,35 @@ const ProtectedRoute = ({ children }) => {
   return user ? children : <Navigate to="/login" />;
 };
 
-function AppContent() {
-  const { user, isAdmin } = useAuth();
+// 🟢 Admin Routes
+function AdminRoutes() {
+  return (
+    <Routes>
+      <Route path="/admin-login" element={<AdminLogin />} />
+      <Route path="/admin-dashboard" element={<AdminDashboard />} />
+      {/* ✅ fallback for admin */}
+      <Route path="*" element={<Navigate to="/admin-login" />} />
+    </Routes>
+  );
+}
 
-  if (isAdmin) {
-    return (
-      <Routes>
-        <Route path="/admin-dashboard" element={<AdminDashboard />} />
-        <Route path="/admin-login" element={<AdminLogin />} />
-        <Route path="/" element={<Navigate to="/admin-dashboard" />} />
-        {/* ✅ fallback when logged out or wrong route */}
-        <Route path="*" element={<Navigate to="/admin-login" />} />
-      </Routes>
-    );
-  }
-
-  // Regular user routes
+// 🔵 User Routes
+function UserRoutes({ user }) {
   return (
     <>
       {user && <Navbar userName={user.email} />}
       <Routes>
         <Route
           path="/login"
-          element={!user ? <Login /> : <Navigate to="/bookings" />}
+          element={!user ? <Login /> : <Navigate to="/home" />}
+        />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="/bookings"
@@ -98,18 +107,22 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        <Route path="/admin-login" element={<AdminLogin />} />
-        <Route
-          path="/"
-          element={user ? <Navigate to="/bookings" /> : <Navigate to="/login" />}
-        />
-        {/* ✅ fallback when logged out */}
-        <Route path="*" element={<Navigate to="/login" />} />
+        {/* ✅ fallback for users */}
+        <Route path="*" element={<Navigate to={user ? "/home" : "/login"} />} />
       </Routes>
     </>
   );
 }
 
+// 🔗 Main App Content
+function AppContent() {
+  const { user, isAdmin } = useAuth();
+
+  if (isAdmin) return <AdminRoutes />;
+  return <UserRoutes user={user} />;
+}
+
+// 🚀 Root App
 function App() {
   return (
     <AuthProvider>

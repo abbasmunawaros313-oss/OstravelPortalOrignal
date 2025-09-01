@@ -1,6 +1,7 @@
 import { useAuth } from "../context/AuthContext";
 import { RiLogoutBoxRLine, RiMenu3Line, RiCloseLine } from "react-icons/ri";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 export default function Navbar({ userName }) {
   const { logout } = useAuth();
@@ -21,34 +22,36 @@ export default function Navbar({ userName }) {
           {/* Logo and Brand */}
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <h1 className="text-xl font-bold text-gray-800">
-                <span className="text-blue-600">Os</span>
-                <span className="text-gray-800">Travel</span>
-                <span className="text-green-600">Portal</span>
-              </h1>
+              <Link to="/home">
+                <h1 className="text-xl font-bold text-gray-800 cursor-pointer">
+                  <span className="text-blue-600">Os</span>
+                  <span className="text-gray-800">Travel</span>
+                  <span className="text-green-600">Portal</span>
+                </h1>
+              </Link>
             </div>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <a href="/bookings" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+            <Link to="/bookings" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
               Bookings
-            </a>
-            <a href="/approved-visas" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+            </Link>
+            <Link to="/approved-visas" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
               Approved Visas
-            </a>
-            <a href="/deleted-visas" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+            </Link>
+            <Link to="/deleted-visas" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
               Deleted Visas
-            </a>
-            <a href="/countries" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+            </Link>
+            <Link to="/countries" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
               Countries
-            </a>
-            <a href="/search" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+            </Link>
+            <Link to="/search" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
               Search
-            </a>
-            <a href="/reports" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+            </Link>
+            <Link to="/reports" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
               Reports
-            </a>
+            </Link>
           </div>
 
           {/* User Menu and Logout */}
@@ -79,24 +82,24 @@ export default function Navbar({ userName }) {
       {isMenuOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
-            <a href="/bookings" className="text-gray-600 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+            <Link to="/bookings" className="text-gray-600 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">
               Bookings
-            </a>
-            <a href="/approved-visas" className="text-gray-600 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+            </Link>
+            <Link to="/approved-visas" className="text-gray-600 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">
               Approved Visas
-            </a>
-            <a href="/deleted-visas" className="text-gray-600 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+            </Link>
+            <Link to="/deleted-visas" className="text-gray-600 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">
               Deleted Visas
-            </a>
-            <a href="/countries" className="text-gray-600 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+            </Link>
+            <Link to="/countries" className="text-gray-600 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">
               Countries
-            </a>
-            <a href="/search" className="text-gray-600 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+            </Link>
+            <Link to="/search" className="text-gray-600 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">
               Search
-            </a>
-            <a href="/reports" className="text-gray-600 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+            </Link>
+            <Link to="/reports" className="text-gray-600 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">
               Reports
-            </a>
+            </Link>
             <div className="border-t pt-4 mt-4">
               <span className="text-gray-700 text-sm font-medium block px-3 py-2">{userName}</span>
               <button

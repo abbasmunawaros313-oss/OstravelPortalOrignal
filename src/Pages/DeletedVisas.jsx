@@ -69,14 +69,14 @@ export default function DeletedVisas() {
 
     try {
       // Check for duplicate passport number
-      const isDuplicate = await checkDuplicatePassport(deletedBooking.passport);
-      if (isDuplicate) {
-        toast.error("Cannot restore: Passport number already exists in your active records!");
-        return;
-      }
+      // const isDuplicate = await checkDuplicatePassport(deletedBooking.passport);
+      // if (isDuplicate) {
+      //   toast.error("Cannot restore: Passport number already exists in your active records!");
+      //   return;
+      //}
 
       // Remove the originalId field and add back to main bookings collection
-      const { originalId, deletedAt, id: deletedId, ...restoredData } = deletedBooking;
+     // const { originalId, deletedAt, id: deletedId, ...restoredData } = deletedBooking;
       
       await addDoc(collection(db, "bookings"), {
         ...restoredData,
