@@ -537,6 +537,7 @@ export default function ApprovedVisas() {
                       >
                         <option value="Paid">Paid</option>
                         <option value="Unpaid">Unpaid</option>
+                         <option value="Partially Paid">Partially Paid</option>  
                       </select>
                     </td>
                     <td className="px-4 py-2">
@@ -602,6 +603,7 @@ export default function ApprovedVisas() {
                       >
                         <option value="Paid">Paid</option>
                         <option value="Unpaid">Unpaid</option>
+                         <option value="Partially Paid">Partially Paid</option>  
                       </select>
                     </td>
                     <td className="px-4 py-2">
