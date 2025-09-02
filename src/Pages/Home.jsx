@@ -79,26 +79,7 @@ export default function Home() {
 
   return (
     <>
-      {/* Hero Section */}
-      <div className="relative bg-gradient-to-br from-blue-50 via-white to-pink-50">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center opacity-25"></div>
-        <div className="relative min-h-[80vh] flex flex-col items-center justify-center text-center px-6">
-          <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 drop-shadow-lg">
-            Explore the World with{" "}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-pink-500 to-yellow-500">
-              OS Travels
-            </span>
-          </h1>
-          <p className="mt-6 text-lg md:text-xl text-gray-700 max-w-2xl">
-            Your one-stop portal for managing visas, bookings, and reports – making travel simpler, faster, and smarter.
-          </p>
-          {user && (
-            <p className="mt-4 px-4 py-2 bg-white/90 shadow rounded-full text-sm text-blue-700 font-medium">
-              Logged in as <span className="font-semibold">{user.email}</span>
-            </p>
-          )}
-        </div>
-      </div>
+     
 
       {/* Quick Links */}
       <div className="py-16 px-6 bg-white">
@@ -165,6 +146,26 @@ export default function Home() {
               <p>Thousands of happy clients rely on us for smooth travel experiences.</p>
             </div>
           </div>
+        </div>
+      </div>
+       {/* Hero Section */}
+       <div className="relative bg-gradient-to-br from-blue-50 via-white to-pink-50">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center opacity-25"></div>
+        <div className="relative min-h-[80vh] flex flex-col items-center justify-center text-center px-6">
+          <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 drop-shadow-lg">
+            Explore the World with{" "}
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-pink-500 to-yellow-500">
+              OS Travels
+            </span>
+          </h1>
+          <p className="mt-6 text-lg md:text-xl text-gray-700 max-w-2xl">
+            Your one-stop portal for managing visas, bookings, and reports – making travel simpler, faster, and smarter.
+          </p>
+          {user && (
+            <p className="mt-4 px-4 py-2 bg-white/90 shadow rounded-full text-sm text-blue-700 font-medium">
+              Logged in as <span className="font-semibold">{user.email}</span>
+            </p>
+          )}
         </div>
       </div>
 
