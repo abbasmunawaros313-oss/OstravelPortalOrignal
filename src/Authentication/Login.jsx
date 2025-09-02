@@ -25,7 +25,7 @@ export default function Login() {
       }
 
       toast.success("Login successful!");
-      navigate("/bookings", { replace: true });
+      navigate("/home", { replace: true });
     } catch (error) {
       console.error("Login error:", error);
       toast.error("Invalid email or password!");
