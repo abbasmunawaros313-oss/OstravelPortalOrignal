@@ -206,7 +206,7 @@ export default function Bookings() {
               label: "Payment Status",
               name: "paymentStatus",
               type: "select",
-              options: ["Paid", "Unpaid"],
+                options: ["Paid", "Unpaid","Partially Paid"],
             },
             { label: "Reference", name: "embassyFee", type: "text", placeholder: "Wajahat Ali" },
             { label: "Email", name: "email", type: "email", placeholder: "john.doe@example.com" },
