@@ -61,36 +61,32 @@ export default function DeletedVisas() {
   };
 
   // Restore deleted booking
-  const handleRestore = async (deletedBooking) => {
-    if (!user || deletedBooking.userId !== user.uid) {
-      toast.error("You can only restore your own deleted records.");
-      return;
-    }
+ // Restore deleted booking
+const handleRestore = async (deletedBooking) => {
+  if (!user || deletedBooking.userId !== user.uid) {
+    toast.error("You can only restore your own deleted records.");
+    return;
+  }
 
-    try {
-      // Check for duplicate passport number
-      // const isDuplicate = await checkDuplicatePassport(deletedBooking.passport);
-      // if (isDuplicate) {
-      //   toast.error("Cannot restore: Passport number already exists in your active records!");
-      //   return;
-      //}
+  try {
+    // Remove metadata fields and prepare clean booking object
+    const { id: deletedId, deletedAt, ...restoredData } = deletedBooking;
 
-      // Remove the originalId field and add back to main bookings collection
-     // const { originalId, deletedAt, id: deletedId, ...restoredData } = deletedBooking;
-      
-      await addDoc(collection(db, "bookings"), {
-        ...restoredData,
-        restoredAt: new Date().toISOString()
-      });
+    // Add back to bookings collection
+    await addDoc(collection(db, "bookings"), {
+      ...restoredData,
+      restoredAt: new Date().toISOString(),
+    });
 
-      // Remove from deletedBookings collection
-      await deleteDoc(doc(db, "deletedBookings", deletedId));
+    // Remove from deletedBookings collection
+    await deleteDoc(doc(db, "deletedBookings", deletedId));
 
-      toast.success("Booking restored successfully!");
-    } catch (error) {
-      toast.error("Error restoring booking: " + error.message);
-    }
-  };
+    toast.success("Booking restored successfully!");
+  } catch (error) {
+    console.error(error);
+    toast.error("Error restoring booking: " + error.message);
+  }
+};
 
   // Permanently delete
   const handlePermanentDelete = async (deletedId) => {
