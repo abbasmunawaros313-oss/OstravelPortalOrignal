@@ -47,14 +47,10 @@ export default function Bookings() {
   const validate = async () => {
     let newErrors = {};
 
-    if (!/^[A-Za-z]{2}[0-9]{11}$/.test(form.passport)) {
-      newErrors.passport = "2 letters followed by 7 digits required.";
-    } else {
-      const isDuplicate = await checkDuplicatePassport(form.passport);
-      if (isDuplicate) {
-        newErrors.passport = "Passport number already exists in your records.";
-      }
-    }
+    if (!form.passport) {
+  newErrors.passport = "Passport number is required.";
+}
+
 
     if (!/^[A-Za-z ]+$/.test(form.fullName.trim())) {
       newErrors.fullName = "Name must contain only letters.";
