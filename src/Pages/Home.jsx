@@ -51,11 +51,13 @@ const services = [
   {
     title: "Flight Ticketing",
     description: "Book flights to destinations worldwide at the best rates.",
+    to:"/tickiting",
     icon: "🎫",
     color: "from-sky-500 to-blue-500",
+
   },
   {
-    title: "Travel Insurance",
+    title: "UMRAH BOOKINGS ",
     description: "Stay safe abroad with comprehensive travel coverage.",
     icon: "🛡️",
     color: "from-green-500 to-emerald-400",
@@ -114,14 +116,15 @@ export default function Home() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
           {services.map((service) => (
-            <div
+            <Link
+            to={service.to}
               key={service.title}
               className={`bg-gradient-to-br ${service.color} text-white rounded-2xl shadow-lg p-8 flex flex-col items-start hover:scale-105 hover:shadow-2xl transition`}
             >
               <div className="text-5xl mb-4">{service.icon}</div>
               <h3 className="text-xl font-semibold mb-2">{service.title}</h3>
               <p className="text-sm opacity-90">{service.description}</p>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
