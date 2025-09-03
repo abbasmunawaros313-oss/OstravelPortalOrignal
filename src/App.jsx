@@ -13,6 +13,8 @@ import AdminLogin from "./Pages/AdminLogin";
 import AdminDashboard from "./Pages/AdminDashboard";
 import Navbar from "./Components/Navbar";
 import Home from "./Pages/Home";
+import Ticketing from "./Pages/Ticketing";
+import Viewall from "./Pages/Viewall";
 
 // 🔒 Protected Route
 const ProtectedRoute = ({ children }) => {
@@ -106,6 +108,24 @@ function UserRoutes({ user }) {
               <Reports />
             </ProtectedRoute>
           }
+          
+        />
+        <Route
+          path="/tickiting"
+          element ={
+            <ProtectedRoute>
+
+              <Ticketing/>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+         path="/viewall"
+         element={
+          <ProtectedRoute>
+            <Viewall/>
+          </ProtectedRoute>
+         }
         />
         {/* ✅ fallback for users */}
         <Route path="*" element={<Navigate to={user ? "/home" : "/login"} />} />
