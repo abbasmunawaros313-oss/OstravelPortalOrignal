@@ -1,57 +1,158 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import Footer from "../Components/Footer";
 import {
   collection,
+  addDoc,
+  serverTimestamp,
   query,
   where,
   orderBy,
+  limit,
   onSnapshot,
   getDocs,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
+import toast from "react-hot-toast";
 
-export default function Viewall() {
+const TRAVEL_CLASSES = ["Economy", "Premium Economy", "Business", "First"];
+
+
+
+export default function TicketingPage() {
   const { user } = useAuth();
-  const [bookings, setBookings] = useState([]);
-  const [searchRef, setSearchRef] = useState("");
-  const [searchId, setSearchId] = useState("");
-  const [results, setResults] = useState([]);
+  const [tripType, setTripType] = useState("oneway");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [departure, setDeparture] = useState("");
+  const [returnDate, setReturnDate] = useState("");
+  const [adults, setAdults] = useState(1);
+  const [children, setChildren] = useState(0);
+  const [infants, setInfants] = useState(0);
+  const [travelClass, setTravelClass] = useState("Economy");
+  const [airlinePref, setAirlinePref] = useState("");
+  const [price, setPrice] = useState("");
+  const [promo, setPromo] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [passport, setPassport] = useState("");
+  const [cnic, setCnic] = useState(""); // ⭐ NEW CNIC field
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [pnr, setPnr] = useState("");
+  const [vendor, setVendor] = useState("");
+  const [payable, setPayable] = useState("");
+  const [profit, setProfit] = useState("");
 
-  // 🔹 Fetch all bookings in real time for this user
+  // Search
+  const [searchRef, setSearchRef] = useState("");
+  const [searchId, setSearchId] = useState(""); // for passport or CNIC
+  const [results, setResults] = useState([]);
+
+  // Latest bookings
+  const [latest, setLatest] = useState([]);
+
+  const paxTotal = useMemo(
+    () => adults + children + infants,
+    [adults, children, infants]
+  );
+
+  // 🔹 Fetch user’s latest bookings (auto-update with onSnapshot)
   useEffect(() => {
     if (!user) return;
     const q = query(
       collection(db, "ticketBookings"),
       where("createdByUid", "==", user.uid),
-      orderBy("createdAt", "desc")
+      orderBy("createdAt", "desc"),
+      limit(5)
     );
     const unsub = onSnapshot(q, (snap) => {
       const arr = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setBookings(arr);
+      setLatest(arr);
     });
     return () => unsub();
   }, [user]);
+  useEffect(() => {
+    const p = parseFloat(price || 0) - parseFloat(payable || 0);
+    setProfit(isNaN(p) ? 0 : p);
+  }, [price, payable]);
+  // 🔹 Handle booking save
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMessage("");
 
-  // 🔹 Search bookings
+    if (!departure) return setMessage("Please select a departure date.");
+    if (tripType === "round" && !returnDate)
+      return setMessage("Please select a return date.");
+    if (!fullName || !passport || !phone || !from || !to || !price)
+      return setMessage("Please fill all required fields including Price.");
+
+    setLoading(true);
+    try {
+      
+      await addDoc(collection(db, "ticketBookings"), {
+        pnr: pnr.trim().toUpperCase(),
+        tripType,
+        from,
+        to,
+        vendor,
+        departure,
+        price,
+        payable,
+        profit,
+        returnDate: tripType === "round" ? returnDate : null,
+        adults,
+        children,
+        infants,
+        totalPax: paxTotal,
+        travelClass,
+        airlinePref: airlinePref || null,
+        promo: promo || null,
+       
+        passenger: {
+          fullName,
+          passport,
+          cnic: cnic || null, // ⭐ Store CNIC
+          phone,
+          email: email || null,
+        },
+        note: note || null,
+        status: "Booked",
+        createdAt: serverTimestamp(),
+        createdByUid: user?.uid,
+       createdByEmail: user?.email,
+        createdByName: user?.displayName || "Unknown",
+      });
+      toast(`Booking saved ✓  Reference: ${pnr}`);
+      setMessage(`Booking saved ✓  Reference: ${pnr}`);
+    } catch (err) {
+      console.error(err);
+      setMessage("Failed to save booking. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🔹 Search bookings by PNR, Passport, or CNIC
   const doSearch = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setResults([]);
-
+    setMessage("");
+  
     let arr = [];
-
+  
     if (searchRef) {
       const q = query(
         collection(db, "ticketBookings"),
         where("pnr", "==", searchRef.trim().toUpperCase())
       );
       const snap = await getDocs(q);
-      arr = arr.concat(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      arr = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     }
-
+  
     if (searchId) {
       const q1 = query(
         collection(db, "ticketBookings"),
@@ -59,7 +160,7 @@ export default function Viewall() {
       );
       const snap1 = await getDocs(q1);
       arr = arr.concat(snap1.docs.map((d) => ({ id: d.id, ...d.data() })));
-
+  
       const q2 = query(
         collection(db, "ticketBookings"),
         where("passenger.cnic", "==", searchId.trim())
@@ -67,299 +168,404 @@ export default function Viewall() {
       const snap2 = await getDocs(q2);
       arr = arr.concat(snap2.docs.map((d) => ({ id: d.id, ...d.data() })));
     }
-
-    setResults(arr);
-    setLoading(false);
-  };
-
-  // 📄 Download PDF
-  const downloadPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(14).text("Search Results - Ticket Bookings", 14, 16);
-
-    autoTable(doc, {
-      startY: 22,
-      head: [["PNR", "Route", "Dates", "Pax", "Class", "Passenger", "Price", "Payable", "Profit", "Status"]],
-      body: results.map((r) => [
-        r.pnr,
-        `${r.from} → ${r.to}`,
-        r.returnDate ? `${r.departure} • ${r.returnDate}` : r.departure,
-        r.totalPax,
-        r.travelClass,
-        `${r.passenger?.fullName}\n${r.passenger?.passport} | ${r.passenger?.cnic} | ${r.passenger?.phone}`,
-        r.price,
-        r.payable,
-        r.profit,
-        r.status,
-      ]),
-      styles: { fontSize: 8, cellPadding: 3 },
-    });
-
-    doc.save("ticket_bookings.pdf");
-  };
-
-  // 📊 Download CSV
-  const downloadCSV = () => {
-    const headers = [
-      "PNR,Route,Dates,Pax,Class,Passenger,Price,Payable,Profit,Status",
-    ];
-    const rows = results.map((r) =>
-      [
-        r.pnr,
-        `${r.from} → ${r.to}`,
-        r.returnDate ? `${r.departure} • ${r.returnDate}` : r.departure,
-        r.totalPax,
-        r.travelClass,
-        `${r.passenger?.fullName} (${r.passenger?.passport} | ${r.passenger?.cnic} | ${r.passenger?.phone})`,
-        r.price,
-        r.payable,
-        r.profit,
-        r.status,
-      ].join(",")
-    );
-
-    const csvContent = [headers, ...rows].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "ticket_bookings.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-  // 📄 Download ALL as PDF
-const downloadAllPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(14).text("All Ticket Bookings", 14, 16);
   
-    autoTable(doc, {
-      startY: 22,
-      head: [["PNR", "Route", "Dates", "Pax", "Class", "Passenger", "Price", "Payable", "Profit", "Status"]],
-      body: bookings.map((b) => [
-        b.pnr,
-        `${b.from} → ${b.to}`,
-        b.returnDate ? `${b.departure} • ${b.returnDate}` : b.departure,
-        b.totalPax,
-        b.travelClass,
-        `${b.passenger?.fullName}\n${b.passenger?.passport} | ${b.passenger?.cnic} | ${b.passenger?.phone}`,
-        b.price,
-        b.payable,
-        b.profit,
-        b.status,
-      ]),
-      styles: { fontSize: 8, cellPadding: 3 },
-    });
-  
-    doc.save("all_ticket_bookings.pdf");
-  };
-  
-  // 📊 Download ALL as CSV
-  const downloadAllCSV = () => {
-    const headers = [
-      "PNR,Route,Dates,Pax,Class,Passenger,Price,Payable,Profit,Status",
-    ];
-    const rows = bookings.map((b) =>
-      [
-        b.pnr,
-        `${b.from} → ${b.to}`,
-        b.returnDate ? `${b.departure} • ${b.returnDate}` : b.departure,
-        b.totalPax,
-        b.travelClass,
-        `${b.passenger?.fullName} (${b.passenger?.passport} | ${b.passenger?.cnic} | ${b.passenger?.phone})`,
-        b.price,
-        b.payable,
-        b.profit,
-        b.status,
-      ].join(",")
-    );
-  
-    const csvContent = [headers, ...rows].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "all_ticket_bookings.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    if (arr.length === 0) {
+      setMessage("No bookings found for your query.");
+    } else {
+      // remove duplicates by ID
+      const unique = arr.reduce((acc, cur) => {
+        acc[cur.id] = cur;
+        return acc;
+      }, {});
+      setResults(Object.values(unique));
+    }
   };
   
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      {/* Search */}
-      <div className="bg-white rounded-xl shadow p-4 mb-6">
-        <form onSubmit={doSearch} className="flex flex-wrap gap-3 items-center">
-          <input
-            type="text"
-            value={searchRef}
-            onChange={(e) => setSearchRef(e.target.value)}
-            placeholder="Search by PNR"
-            className="border rounded-lg px-4 py-2 flex-1"
-          />
-          <input
-            type="text"
-            value={searchId}
-            onChange={(e) => setSearchId(e.target.value)}
-            placeholder="Passport / CNIC"
-            className="border rounded-lg px-4 py-2 flex-1"
-          />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg"
-          >
-            {loading ? "Searching..." : "Search"}
-          </button>
-          {results.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setResults([])}
-              className="ml-2 px-4 py-2 border rounded-lg"
+    <>
+      {/* Booking Form */}
+      <div className="bg-gradient-to-b from-[#0e3a67] to-[#0e3a67]/70 pb-10 pt-8">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="mx-auto bg-white/95 backdrop-blur rounded-3xl shadow-2xl p-6 md:p-8 w-full max-w-6xl">
+            <form
+              onSubmit={handleSubmit}
+              className="grid grid-cols-12 gap-4 items-end"
             >
-              Close Results
-            </button>
-          )}
-        </form>
-      </div>
+              {/* Trip Type */}
+              <div className="col-span-12 flex gap-6 items-center">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="tripType"
+                    value="oneway"
+                    checked={tripType === "oneway"}
+                    onChange={(e) => setTripType(e.target.value)}
+                  />
+                  One Way
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="tripType"
+                    value="round"
+                    checked={tripType === "round"}
+                    onChange={(e) => setTripType(e.target.value)}
+                  />
+                  Return
+                </label>
+              </div>
 
-      {/* Search Results */}
-      {results.length > 0 && (
-        <div className="overflow-x-auto mb-10">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-semibold">Search Results</h2>
-            <div className="flex gap-2">
-              <button
-                onClick={downloadPDF}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg"
-              >
-                Download PDF
-              </button>
-              <button
-                onClick={downloadCSV}
-                className="px-4 py-2 bg-yellow-500 text-white rounded-lg"
-              >
-                Download CSV
-              </button>
-            </div>
+              {/* From */}
+              <div className="col-span-12 md:col-span-3">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  From (City / Country)
+                </label>
+                <input
+                  type="text"
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                  placeholder="e.g. Karachi, Pakistan"
+                  className="w-full border rounded-xl px-4 py-3"
+                  required
+                />
+              </div>
+
+              {/* To */}
+              <div className="col-span-12 md:col-span-3">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  To (City / Country)
+                </label>
+                <input
+                  type="text"
+                  value={to}
+                  onChange={(e) => setTo(e.target.value)}
+                  placeholder="e.g. London, UK"
+                  className="w-full border rounded-xl px-4 py-3"
+                  required
+                />
+              </div>
+
+              {/* Departure */}
+              <div className="col-span-12 md:col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Departure
+                </label>
+                <input
+                  type="date"
+                  value={departure}
+                  onChange={(e) => setDeparture(e.target.value)}
+                  className="w-full border rounded-xl px-4 py-3"
+                  required
+                />
+              </div>
+
+              {/* Return */}
+              <div className="col-span-12 md:col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Return
+                </label>
+                <input
+                  type="date"
+                  value={returnDate}
+                  onChange={(e) => setReturnDate(e.target.value)}
+                  className="w-full border rounded-xl px-4 py-3 disabled:opacity-50"
+                  disabled={tripType !== "round"}
+                  required={tripType === "round"}
+                />
+              </div>
+
+              {/* Price */}
+                      {/* Price */}
+<div className="col-span-12 md:col-span-2">
+  <label className="block text-xs font-medium text-gray-600 mb-1">
+    Price (PKR)
+  </label>
+  <input
+    type="number"
+    value={price}
+    onChange={(e) => setPrice(e.target.value)}
+    placeholder="e.g. 120000"
+    className="w-full border rounded-xl px-4 py-3"
+    required
+  />
+</div>
+
+{/* Payable */}
+<div className="col-span-12 md:col-span-2">
+  <label className="block text-xs font-medium text-gray-600 mb-1">
+    Payable (PKR)
+  </label>
+  <input
+    type="number"
+    value={payable}
+    onChange={(e) => setPayable(e.target.value)}
+    placeholder="e.g. 110000"
+    className="w-full border rounded-xl px-4 py-3"
+    required
+  />
+</div>
+
+{/* Profit - auto calculated, readonly */}
+<div className="col-span-12 md:col-span-2">
+  <label className="block text-xs font-medium text-gray-600 mb-1">
+    Profit (PKR)
+  </label>
+  <input
+    type="number"
+    value={profit}
+    readOnly
+    className="w-full border rounded-xl px-4 py-3 bg-gray-100"
+  />
+</div>
+
+
+              {/* Passengers */}
+              <div className="col-span-12 md:col-span-3">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Travellers
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    value={adults}
+                    onChange={(e) => setAdults(parseInt(e.target.value || "0"))}
+                    className="border rounded-xl px-3 py-2"
+                    title="Adults"
+                  />
+                  
+                  <input
+                    type="number"
+                    min={0}
+                    value={children}
+                    onChange={(e) =>
+                      setChildren(parseInt(e.target.value || "0"))
+                    }
+                    className="border rounded-xl px-3 py-2"
+                    title="Children"
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    value={infants}
+                    onChange={(e) =>
+                      setInfants(parseInt(e.target.value || "0"))
+                    }
+                    className="border rounded-xl px-3 py-2"
+                    title="Infants"
+                  />
+                </div>
+              </div>
+
+              <div className="col-span-12 md:col-span-3">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Class
+                </label>
+                <select
+                  className="w-full border rounded-xl px-4 py-3"
+                  value={travelClass}
+                  onChange={(e) => setTravelClass(e.target.value)}
+                >
+                  {TRAVEL_CLASSES.map((c) => (
+                    <option key={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Passenger Info */}
+              <div className="col-span-12 md:col-span-4">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Passenger Full Name
+                </label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="As per Passport"
+                  className="w-full border rounded-xl px-4 py-3"
+                  required
+                />
+              </div>
+
+              <div className="col-span-12 md:col-span-4">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Passport
+                </label>
+                <input
+                  type="text"
+                  value={passport}
+                  onChange={(e) => setPassport(e.target.value)}
+                  placeholder="e.g. LK123456"
+                  className="w-full border rounded-xl px-4 py-3"
+                  required
+                />
+              </div>
+
+              {/* CNIC */}
+              <div className="col-span-12 md:col-span-4">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  CNIC
+                </label>
+                <input
+                  type="text"
+                  value={cnic}
+                  onChange={(e) => setCnic(e.target.value)}
+                  placeholder="42101-1234567-8"
+                  className="w-full border rounded-xl px-4 py-3"
+                />
+              </div>
+
+              <div className="col-span-12 md:col-span-4">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Phone
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="WhatsApp preferred"
+                  className="w-full border rounded-xl px-4 py-3"
+                  required
+                />
+              </div>
+              <div className="col-span-12 md:col-span-4">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  PNR
+                </label>
+                <input
+                  type="text"
+                  value={pnr}
+                  onChange={(e) => setPnr(e.target.value)}
+                  placeholder="Enter the pnr here...."
+                  className="w-full border rounded-xl px-4 py-3"
+                  required
+                />
+              </div>
+              <div className="col-span-12 md:col-span-4">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Vendor
+                </label>
+                <input
+                  type="text"
+                  value={vendor}
+                  onChange={(e) => setVendor(e.target.value)}
+                  placeholder="Enter the Vendor"
+                  className="w-full border rounded-xl px-4 py-3"
+                  required
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="col-span-12 flex gap-3 justify-end mt-2">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-8 py-3 rounded-xl bg-[#0e66ff] text-white font-semibold shadow"
+                >
+                  {loading ? "Saving..." : "Save Booking"}
+                </button>
+                <Link
+                  to="/viewall"
+                  className="px-6 py-3 rounded-xl border font-semibold hover:bg-gray-50"
+                >
+                  View All
+                </Link>
+              </div>
+              {message && (
+                <div className="col-span-12 text-center text-sm text-gray-700 mt-2">
+                  {message}
+                </div>
+              )}
+            </form>
           </div>
-
-          <table className="min-w-full border text-sm">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-2 border">PNR</th>
-                <th className="p-2 border">Route</th>
-                <th className="p-2 border">Dates</th>
-                <th className="p-2 border">Pax</th>
-                <th className="p-2 border">Class</th>
-                <th className="p-2 border">Passenger</th>
-                <th className="p-2 border">Price</th>
-                <th className="p-2 border">Payable</th>
-                <th className="p-2 border">Profit</th>
-                <th className="p-2 border">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {results.map((r) => (
-                <tr key={r.id} className="hover:bg-gray-50">
-                  <td className="p-2 border font-semibold">{r.pnr}</td>
-                  <td className="p-2 border">{r.from} → {r.to}</td>
-                  <td className="p-2 border">
-                    {r.departure}
-                    {r.returnDate ? ` • ${r.returnDate}` : ""}
-                  </td>
-                  <td className="p-2 border">{r.totalPax}</td>
-                  <td className="p-2 border">{r.travelClass}</td>
-                  <td className="p-2 border">
-                    <div>{r.passenger?.fullName}</div>
-                    <div className="text-xs text-gray-500">
-                      {r.passenger?.passport} | {r.passenger?.cnic} | {r.passenger?.phone} | {r.passenger?.email}
-                    </div>
-                  </td>
-                  <td className="p-2 border">{r.price}</td>
-                  <td className="p-2 border">{r.payable}</td>
-                  <td className="p-2 border text-green-600 font-semibold">
-                    {r.profit}
-                  </td>
-                  <td className="p-2 border">{r.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
-      )}
-
-      {/* All Bookings */}
-      {/* All Bookings */}
-<div className="overflow-x-auto">
-  <div className="flex items-center justify-between mb-2">
-    <h2 className="text-lg font-semibold">All Bookings</h2>
-    {bookings.length > 0 && (
-      <div className="flex gap-2">
-        <button
-          onClick={downloadAllPDF}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg"
-        >
-          Download All PDF
-        </button>
-        <button
-          onClick={downloadAllCSV}
-          className="px-4 py-2 bg-yellow-500 text-white rounded-lg"
-        >
-          Download All CSV
-        </button>
       </div>
-    )}
-  </div>
-  </div>
 
-      <div className="overflow-x-auto">
-        <h2 className="text-lg font-semibold mb-2">All Bookings</h2>
-        {bookings.length === 0 ? (
-          <div className="text-gray-500 text-sm">No bookings found.</div>
-        ) : (
-          <table className="min-w-full border text-sm">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-2 border">PNR</th>
-                <th className="p-2 border">Route</th>
-                <th className="p-2 border">Dates</th>
-                <th className="p-2 border">Pax</th>
-                <th className="p-2 border">Class</th>
-                <th className="p-2 border">Passenger</th>
-                <th className="p-2 border">Price</th>
-                <th className="p-2 border">Payable</th>
-                <th className="p-2 border">Profit</th>
-                <th className="p-2 border">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {bookings.map((b) => (
-                <tr key={b.id} className="hover:bg-gray-50">
-                  <td className="p-2 border font-semibold">{b.pnr}</td>
-                  <td className="p-2 border">{b.from} → {b.to}</td>
-                  <td className="p-2 border">
-                    {b.departure}
-                    {b.returnDate ? ` • ${b.returnDate}` : ""}
-                  </td>
-                  <td className="p-2 border">{b.totalPax}</td>
-                  <td className="p-2 border">{b.travelClass}</td>
-                  <td className="p-2 border">
-                    <div>{b.passenger?.fullName}</div>
-                    <div className="text-xs text-gray-500">
-                      {b.passenger?.passport} | {b.passenger?.cnic} | {b.passenger?.phone} | {b.passenger?.email}
-                    </div>
-                  </td>
-                  <td className="p-2 border">{b.price}</td>
-                  <td className="p-2 border">{b.payable}</td>
-                  <td className="p-2 border text-green-600 font-semibold">
-                    {b.profit}
-                  </td>
-                  <td className="p-2 border">{b.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      {/* Search Bookings */}
+      <div className="bg-gray-50 py-12 px-6">
+        <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow p-6 md:p-8">
+          <h3 className="text-xl font-semibold mb-4">Search Booked Tickets</h3>
+          <form
+            onSubmit={doSearch}
+            className="grid grid-cols-1 md:grid-cols-3 gap-4"
+          >
+            <input
+              type="text"
+              value={searchRef}
+              onChange={(e) => setSearchRef(e.target.value)}
+              placeholder="PNR e.g. OS-XYZ123"
+              className="border rounded-xl px-4 py-3"
+            />
+            <input
+              type="text"
+              value={searchId}
+              onChange={(e) => setSearchId(e.target.value)}
+              placeholder="Passport / CNIC"
+              className="border rounded-xl px-4 py-3"
+            />
+            <button
+              type="submit"
+              className="px-6 py-3 bg-[#0e66ff] text-white rounded-xl font-semibold"
+            >
+              Search
+            </button>
+          </form>
+
+          {results.length > 0 && (
+            <div className="mt-6 overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-600 border-b">
+                    <th className="py-3 pr-4">PNR</th>
+                    <th className="py-3 pr-4">Route</th>
+                    <th className="py-3 pr-4">Dates</th>
+                    <th className="py-3 pr-4">Pax</th>
+                    <th className="py-3 pr-4">Class</th>
+                    <th className="py-3 pr-4">Passenger</th>
+                    <th className="py-3 pr-4">Price</th>
+                    <th className="py-3 pr-4">Type</th>
+                    <th className="py-3 pr-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.map((r) => (
+                    <tr key={r.id} className="border-b hover:bg-gray-50">
+                      <td className="py-3 pr-4 font-semibold">{r.pnr}</td>
+                      <td className="py-3 pr-4">
+                        {r.from} → {r.to}
+                      </td>
+                      <td className="py-3 pr-4">
+                        {r.departure}
+                        {r.returnDate ? ` • ${r.returnDate}` : ""}
+                      </td>
+                      <td className="py-3 pr-4">{r.totalPax}</td>
+                      <td className="py-3 pr-4">{r.travelClass}</td>
+                      <td className="py-3 pr-4">
+                        {r.passenger?.fullName}
+                        <br />
+                        <span className="text-xs text-gray-500">
+                          {r.passenger?.passport} | {r.passenger?.cnic}
+                        </span>
+                      </td>
+                      <td className="py-3 pr-4">{r.price}</td>
+                      <td className="py-3 pr-4 capitalize">{r.tripType}</td>
+                      <td className="py-3 pr-4 capitalize">{r.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {message && (
+            <div className="mt-3 text-sm text-gray-600">{message}</div>
+          )}
+        </div>
       </div>
-    </div>
+
+      
+
+      <Footer />
+    </>
   );
 }
