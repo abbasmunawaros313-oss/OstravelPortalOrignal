@@ -59,7 +59,7 @@ export default function Bookings() {
     if (!form.totalFee || isNaN(form.totalFee)) newErrors.totalFee = "Enter valid fee.";
     if (!form.receivedFee || isNaN(form.receivedFee)) {
       newErrors.receivedFee = "Enter valid received fee.";
-    } else if (Number(form.receivedFee) === 0) {
+    } else if (Number(form.receivedFee) || 0) {
       newErrors.receivedFee = "Received fee cannot be 0.";
     } else if (Number(form.receivedFee) > Number(form.totalFee)) {
       newErrors.receivedFee = "Cannot exceed total fee.";
@@ -97,7 +97,7 @@ export default function Bookings() {
     if (name === "totalFee" || name === "receivedFee") {
       const total = Number(name === "totalFee" ? value : form.totalFee);
       const received = Number(name === "receivedFee" ? value : form.receivedFee);
-      updatedForm.remainingFee = total && received ? total - received : "";
+      updatedForm.remainingFee =  total - received ;
     }
 
     if (errors[name]) {
@@ -180,6 +180,7 @@ export default function Bookings() {
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[
             { label: "Passport No", name: "passport", type: "text", placeholder: "AB1234567" },
+           { label: "Expiry Date", name: "expiryDate", type: "date" },
             { label: "Full Name", name: "fullName", type: "text", placeholder: "John Doe" },
             {
               label: "Visa Type",
@@ -207,7 +208,7 @@ export default function Bookings() {
             { label: "Reference", name: "embassyFee", type: "text", placeholder: "Wajahat Ali" },
             { label: "Email", name: "email", type: "email", placeholder: "john.doe@example.com" },
             { label: "Phone", name: "phone", type: "text", placeholder: "03XXXXXXXXX" },
-            { label: "Expiry Date", name: "expiryDate", type: "date" },
+          
           ].map((field, i) => (
             <div key={i} className="col-span-1">
               <label className="block text-sm text-gray-500 mb-1">{field.label}</label>
