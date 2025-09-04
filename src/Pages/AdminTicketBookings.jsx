@@ -133,29 +133,27 @@ export default function AdminTicketBookings() {
       status: booking.status || "",
     });
   };
+  const [saving, setSaving] = useState(false);
 
   const saveEdit = async () => {
     if (!editing) return;
-    const ref = doc(db, "ticketBookings", editing.id);
-    // Only update editable fields to avoid clobbering
-    const payload = {
-      pnr: formData.pnr,
-      price: Number(formData.price) || 0,
-      payable: Number(formData.payable) || 0,
-      profit: Number(formData.profit) || 0,
-      status: formData.status,
-    };
-    await updateDoc(ref, payload);
-    setEditing(null);
-    setFormData({});
-  };
-
-  const deleteBooking = async (id) => {
-    if (window.confirm("Are you sure you want to delete this booking?")) {
-      await deleteDoc(doc(db, "ticketBookings", id));
+    setSaving(true);
+    try {
+      const ref = doc(db, "ticketBookings", editing.id);
+      await updateDoc(ref, {
+        pnr: formData.pnr,
+        price: Number(formData.price) || 0,
+        payable: Number(formData.payable) || 0,
+        profit: Number(formData.profit) || 0,
+        status: formData.status,
+      });
+      setEditing(null);
+      setFormData({});
+    } finally {
+      setSaving(false);
     }
   };
-
+  
   // ---------- PDF ----------
   const exportPDF = () => {
     const docPDF = new jsPDF();
@@ -383,74 +381,103 @@ export default function AdminTicketBookings() {
         </table>
       </div>
 
-      {/* Edit Modal */}
-      {editing && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white p-6 rounded-2xl w-96 shadow-lg">
-            <h3 className="text-lg font-semibold mb-4">Edit Booking</h3>
+    {/* Edit Modal */}
+{editing && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+    <div className="bg-white p-6 rounded-2xl w-96 shadow-lg relative">
+      <h3 className="text-lg font-semibold mb-4">Edit Booking</h3>
 
-            <label className="text-xs font-medium text-gray-600">PNR</label>
-            <input
-              type="text"
-              value={formData.pnr}
-              onChange={(e) => setFormData({ ...formData, pnr: e.target.value })}
-              placeholder="PNR"
-              className="w-full mb-3 p-2 border rounded-lg"
-            />
+      <label className="text-xs font-medium text-gray-600">PNR</label>
+      <input
+        type="text"
+        value={formData.pnr}
+        onChange={(e) => setFormData({ ...formData, pnr: e.target.value })}
+        placeholder="PNR"
+        className="w-full mb-3 p-2 border rounded-lg"
+      />
 
-            <label className="text-xs font-medium text-gray-600">Price</label>
-            <input
-              type="number"
-              value={formData.price}
-              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-              placeholder="Price"
-              className="w-full mb-3 p-2 border rounded-lg"
-            />
+      <label className="text-xs font-medium text-gray-600">Price</label>
+      <input
+        type="number"
+        value={formData.price}
+        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+        placeholder="Price"
+        className="w-full mb-3 p-2 border rounded-lg"
+      />
 
-            <label className="text-xs font-medium text-gray-600">Payable</label>
-            <input
-              type="number"
-              value={formData.payable}
-              onChange={(e) => setFormData({ ...formData, payable: e.target.value })}
-              placeholder="Payable"
-              className="w-full mb-3 p-2 border rounded-lg"
-            />
+      <label className="text-xs font-medium text-gray-600">Payable</label>
+      <input
+        type="number"
+        value={formData.payable}
+        onChange={(e) => setFormData({ ...formData, payable: e.target.value })}
+        placeholder="Payable"
+        className="w-full mb-3 p-2 border rounded-lg"
+      />
 
-            <label className="text-xs font-medium text-gray-600">Profit</label>
-            <input
-              type="number"
-              value={formData.profit}
-              onChange={(e) => setFormData({ ...formData, profit: e.target.value })}
-              placeholder="Profit"
-              className="w-full mb-3 p-2 border rounded-lg"
-            />
+      <label className="text-xs font-medium text-gray-600">Profit</label>
+      <input
+        type="number"
+        value={formData.profit}
+        onChange={(e) => setFormData({ ...formData, profit: e.target.value })}
+        placeholder="Profit"
+        className="w-full mb-3 p-2 border rounded-lg"
+      />
 
-            <label className="text-xs font-medium text-gray-600">Status</label>
-            <input
-              type="text"
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              placeholder="Status"
-              className="w-full mb-4 p-2 border rounded-lg"
-            />
+      <label className="text-xs font-medium text-gray-600">Status</label>
+      <input
+        type="text"
+        value={formData.status}
+        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+        placeholder="Status"
+        className="w-full mb-4 p-2 border rounded-lg"
+      />
 
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setEditing(null)}
-                className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-lg"
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={() => setEditing(null)}
+          disabled={saving}
+          className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-lg disabled:opacity-50"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={saveEdit}
+          disabled={saving}
+          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2"
+        >
+          {saving ? (
+            <>
+              <svg
+                className="animate-spin h-4 w-4 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
               >
-                Cancel
-              </button>
-              <button
-                onClick={saveEdit}
-                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                />
+              </svg>
+              Saving…
+            </>
+          ) : (
+            "Save"
+          )}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }
