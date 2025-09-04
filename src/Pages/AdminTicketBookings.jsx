@@ -58,6 +58,49 @@ export default function AdminTicketBookings() {
         .includes(search.toLowerCase())
   );
 
+  // 💰 Totals Calculation
+  const totals = {
+    daily: { earnings: 0, profit: 0 },
+    weekly: { earnings: 0, profit: 0 },
+    monthly: { earnings: 0, profit: 0 },
+    overall: { earnings: 0, profit: 0 },
+  };
+
+  const today = new Date();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
+  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  filteredBookings.forEach((b) => {
+    const profit = Number(b.profit) || 0;
+    const price = Number(b.price) || 0;
+    const payable = Number(b.payable) || 0;
+    const earnings = price - payable;
+    const bookingDate = new Date(b.createdAt);
+
+    // Overall
+    totals.overall.profit += profit;
+    totals.overall.earnings += earnings;
+
+    // Daily
+    if (bookingDate.toDateString() === today.toDateString()) {
+      totals.daily.profit += profit;
+      totals.daily.earnings += earnings;
+    }
+
+    // Weekly
+    if (bookingDate >= startOfWeek) {
+      totals.weekly.profit += profit;
+      totals.weekly.earnings += earnings;
+    }
+
+    // Monthly
+    if (bookingDate >= startOfMonth) {
+      totals.monthly.profit += profit;
+      totals.monthly.earnings += earnings;
+    }
+  });
+
   // ✏️ Edit booking
   const startEdit = (booking) => {
     setEditing(booking);
@@ -124,6 +167,39 @@ export default function AdminTicketBookings() {
           </button>
         </div>
       </div>
+
+      {/* Totals Section */}
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 my-6">
+  {Object.entries(totals).map(([period, { earnings, profit }]) => (
+    <div
+      key={period}
+      className="p-6 bg-gradient-to-br from-white to-gray-50 border rounded-2xl shadow-md hover:shadow-lg transition duration-300"
+    >
+      <h4 className="text-lg font-semibold text-gray-700 capitalize mb-3 flex items-center gap-2">
+        <span className="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>
+        {period}
+      </h4>
+
+      <div className="space-y-3">
+        {/* Earnings */}
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-500">Earnings</span>
+          <span className="text-xl font-bold text-blue-600">
+            ${earnings.toLocaleString()}
+          </span>
+        </div>
+
+        {/* Profit */}
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-500">Profit</span>
+          <span className="text-xl font-bold text-green-600">
+            ${profit.toLocaleString()}
+          </span>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
 
       {/* Search */}
       <div className="relative">
