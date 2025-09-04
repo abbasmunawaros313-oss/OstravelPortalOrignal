@@ -1,19 +1,23 @@
 import { createContext, useContext, useState, useEffect, useRef } from "react";
-import { auth } from "../firebase";
-import { 
-  onAuthStateChanged, 
-  signOut, 
-  signInWithEmailAndPassword 
+import { auth, db } from "../firebase";
+import {
+  onAuthStateChanged,
+  signOut,
+  signInWithEmailAndPassword,
 } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem("user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => {
+    return localStorage.getItem("isAdmin") === "true";
+  });
 
   // Track login attempts (rate limiting)
   const loginAttempts = useRef(0);
@@ -42,28 +46,34 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser || null);
-
       if (firebaseUser) {
+        const userData = {
+          email: firebaseUser.email,
+          uid: firebaseUser.uid,
+        };
+
+        let role = "employee"; // default
         try {
-          // Check Firestore for admin role
           const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-          if (userDoc.exists() && userDoc.data().role === "admin") {
-            setIsAdmin(true);
-          } else {
-            // Fallback: check env admin
-            if (firebaseUser.email === import.meta.env.VITE_ADMIN_EMAIL) {
-              setIsAdmin(true);
-            } else {
-              setIsAdmin(false);
-            }
+          if (userDoc.exists()) {
+            role = userDoc.data().role || "employee";
           }
-        } catch (error) {
-          console.error("Error checking admin status:", error);
-          setIsAdmin(false);
+        } catch (err) {
+          console.error("Error fetching role:", err);
         }
+
+        const adminStatus = role === "admin";
+        setUser(userData);
+        setIsAdmin(adminStatus);
+
+        // ✅ persist
+        localStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem("isAdmin", adminStatus ? "true" : "false");
       } else {
+        setUser(null);
         setIsAdmin(false);
+        localStorage.removeItem("user");
+        localStorage.removeItem("isAdmin");
       }
 
       setLoading(false);
@@ -75,48 +85,64 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setIsAdmin(false);
     setUser(null);
+    localStorage.removeItem("user");
+    localStorage.removeItem("isAdmin");
     signOut(auth);
   };
 
-  const loginAsAdmin = async (email, password) => {
+  // ✅ Unified login
+  const login = async (email, password) => {
     try {
       checkRateLimit();
 
-      // ✅ Hardcoded admin login bypass (no Firebase needed)
+      // Hardcoded admin bypass (optional)
       if (email === "adminos@gmail.com" && password === "ospk123") {
-        setUser({ email, uid: "local-admin" });
+        const adminUser = { email, uid: "local-admin" };
+        setUser(adminUser);
         setIsAdmin(true);
-        return { success: true };
+        localStorage.setItem("user", JSON.stringify(adminUser));
+        localStorage.setItem("isAdmin", "true");
+        return { success: true, isAdmin: true };
       }
 
-      // ✅ Otherwise use Firebase Auth
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      // Firebase login
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
 
-      // Check Firestore role
+      const firebaseUser = userCredential.user;
+      const userData = {
+        email: firebaseUser.email,
+        uid: firebaseUser.uid,
+      };
+
+      let role = "employee";
       try {
-        const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
-        if (userDoc.exists() && userDoc.data().role === "admin") {
-          setIsAdmin(true);
-          return { success: true };
+        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+        if (userDoc.exists()) {
+          role = userDoc.data().role || "employee";
         }
-      } catch (error) {
-        console.error("Error checking user role:", error);
+      } catch (err) {
+        console.error("Error fetching role:", err);
       }
 
-      // Fallback: env admin email
-      if (userCredential.user.email === import.meta.env.VITE_ADMIN_EMAIL) {
-        setIsAdmin(true);
-        return { success: true };
-      } else {
-        return { success: false, error: "Not authorized as admin" };
-      }
+      const adminStatus = role === "admin";
+      setUser(userData);
+      setIsAdmin(adminStatus);
+
+      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("isAdmin", adminStatus ? "true" : "false");
+
+      return { success: true, isAdmin: adminStatus };
     } catch (error) {
       return { success: false, error: error.message };
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout, isAdmin, loginAsAdmin }}>
+    <AuthContext.Provider value={{ user, loading, logout, isAdmin, login }}>
       {children}
     </AuthContext.Provider>
   );
