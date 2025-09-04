@@ -15,6 +15,7 @@ import Navbar from "./Components/Navbar";
 import Home from "./Pages/Home";
 import Ticketing from "./Pages/Ticketing";
 import Viewall from "./Pages/Viewall";
+import AdminTicketBookings from "./Pages/AdminTicketBookings";
 
 // 🔒 Protected Route
 const ProtectedRoute = ({ children }) => {
@@ -35,10 +36,10 @@ const ProtectedRoute = ({ children }) => {
 function AdminRoutes() {
   return (
     <Routes>
-      <Route path="/admin-login" element={<AdminLogin />} />
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
+      <Route path="/AdminTicketBookings" element={<AdminTicketBookings/>}/>
       {/* ✅ fallback for admin */}
-      <Route path="*" element={<Navigate to="/admin-login" />} />
+      <Route path="/admin-dashboard" element={<AdminDashboard />} />
     </Routes>
   );
 }
@@ -126,6 +127,14 @@ function UserRoutes({ user }) {
             <Viewall/>
           </ProtectedRoute>
          }
+        />
+        <Route
+        path="/adminTicketDashboard"
+        element ={
+          <ProtectedRoute>
+            <AdminTicketBookings/>
+          </ProtectedRoute>
+        }
         />
         {/* ✅ fallback for users */}
         <Route path="*" element={<Navigate to={user ? "/home" : "/login"} />} />
