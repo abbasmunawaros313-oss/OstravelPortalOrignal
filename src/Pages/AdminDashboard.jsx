@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
+
 import {
   collection,
   query,
@@ -39,6 +40,7 @@ import {
 import toast from "react-hot-toast";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function AdminDashboard() {
   const { user, isAdmin, logout } = useAuth();
@@ -84,7 +86,11 @@ export default function AdminDashboard() {
       </div>
     );
   }
-
+  const navigate = useNavigate();
+  const HandleClick =()=>{
+      navigate("/AdminTicketBookings");
+     
+  }
   // Fetch all bookings
   useEffect(() => {
     const q = query(collection(db, "bookings"), orderBy("createdAt", "desc"));
@@ -469,7 +475,13 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
-
+      <div className="flex justify-center items-center">
+         <button onClick={HandleClick}
+         className="mt-10 px-5 py-3 bg-green-200 cursor-pointer border-none text-xl shadow-2xl rounded-xl hover:bg-green-400 hover:text-white"
+         >
+          Go to Ticket Bookings
+         </button>
+      </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
