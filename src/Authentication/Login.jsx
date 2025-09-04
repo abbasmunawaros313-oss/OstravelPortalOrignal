@@ -10,25 +10,29 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { loginAsAdmin } = useAuth();
+  const { login } = useAuth(); // ✅ only use login now
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const adminResult = await loginAsAdmin(email, password);
-      if (adminResult.success) {
-        toast.success("Welcome Admin!");
-        navigate("/admin-dashboard", { replace: true });
-        return;
-      }
+      const result = await login(email, password);
 
-      toast.success("Login successful!");
-      navigate("/home", { replace: true });
+      if (result.success) {
+        if (result.isAdmin) {
+          toast.success("Welcome Admin!");
+          navigate("/admin-dashboard", { replace: true });
+        } else {
+          toast.success("Login successful!");
+          navigate("/employee-dashboard", { replace: true });
+        }
+      } else {
+        toast.error(result.error || "Invalid email or password!");
+      }
     } catch (error) {
       console.error("Login error:", error);
-      toast.error("Invalid email or password!");
+      toast.error("Something went wrong!");
     } finally {
       setIsLoading(false);
     }
@@ -36,18 +40,18 @@ export default function Login() {
 
   return (
     <div className="relative flex items-center justify-center min-h-screen bg-gradient-to-br from-sky-300 via-blue-500 to-indigo-600 overflow-hidden">
-      {/* ☁️ Cloudy Background with floating effect */}
+      {/* ☁️ Background Clouds */}
       <div className="absolute top-10 left-10 w-40 h-20 bg-white/40 rounded-full blur-2xl animate-pulse"></div>
       <div className="absolute bottom-20 right-16 w-56 h-28 bg-white/30 rounded-full blur-3xl animate-bounce"></div>
       <div className="absolute top-1/3 left-1/3 w-72 h-36 bg-white/20 rounded-full blur-2xl animate-ping"></div>
 
-      {/* ✈️ Airplane trail effect */}
+      {/* ✈️ Airplane Circles */}
       <div className="absolute -top-10 -left-10 w-96 h-96 border-2 border-dashed border-white/20 rounded-full animate-spin-slow"></div>
       <div className="absolute top-1/2 -right-20 w-96 h-96 border border-dashed border-white/10 rounded-full animate-spin-slower"></div>
 
-      {/* Card */}
+      {/* Login Card */}
       <div className="relative bg-white/10 backdrop-blur-xl shadow-2xl rounded-3xl p-8 w-full max-w-md border border-white/20 z-10">
-        {/* Logo & Title */}
+        {/* Logo */}
         <div className="flex flex-col items-center justify-center gap-2 mb-6 text-center">
           <MdFlightTakeoff className="text-yellow-300 text-6xl drop-shadow-lg animate-bounce" />
           <h1 className="text-3xl font-extrabold text-white tracking-wide">
@@ -102,7 +106,7 @@ export default function Login() {
             </label>
           </div>
 
-          {/* Button */}
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={isLoading}
