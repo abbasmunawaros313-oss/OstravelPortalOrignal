@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
+import { useAuth } from "../context/AuthContext";
+
 import {
   collection,
   addDoc,
@@ -43,6 +45,7 @@ export default function UmmrahBookings() {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
+  const { user } = useAuth();
 
   // Fetch all bookings
   useEffect(() => {
@@ -87,6 +90,9 @@ export default function UmmrahBookings() {
         received: Number(formData.received),
         profit: Number(formData.received) - Number(formData.payable),
         createdAt: new Date(),
+         createdByUid: user?.uid,
+  createdByEmail: user?.email,
+  createdByName: user?.displayName || "Unknown",
       });
       toast.success("Booking added successfully");
       setFormData({
