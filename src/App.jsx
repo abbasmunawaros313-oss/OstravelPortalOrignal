@@ -16,7 +16,7 @@ import Home from "./Pages/Home";
 import Ticketing from "./Pages/Ticketing";
 import Viewall from "./Pages/Viewall";
 import AdminTicketBookings from "./Pages/AdminTicketBookings";
-
+import UmmrahBookings from "./Pages/UmmrahBookings";
 // 🔒 Protected Route
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -133,6 +133,14 @@ function UserRoutes({ user }) {
         element ={
           <ProtectedRoute>
             <AdminTicketBookings/>
+          </ProtectedRoute>
+        }
+        />
+          <Route
+        path="/umrahbookings"
+        element ={
+          <ProtectedRoute>
+            <UmmrahBookings/>
           </ProtectedRoute>
         }
         />
