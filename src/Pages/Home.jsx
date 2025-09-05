@@ -59,6 +59,7 @@ const services = [
   {
     title: "UMRAH BOOKINGS ",
     description: "Stay safe abroad with comprehensive travel coverage.",
+    to:"/umrahbookings",
     icon: "🛡️",
     color: "from-green-500 to-emerald-400",
   },
