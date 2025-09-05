@@ -17,6 +17,8 @@ import Ticketing from "./Pages/Ticketing";
 import Viewall from "./Pages/Viewall";
 import AdminTicketBookings from "./Pages/AdminTicketBookings";
 import UmmrahBookings from "./Pages/UmmrahBookings";
+import AdminHome from "./Pages/AdminHome";
+
 // 🔒 Protected Route
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -38,6 +40,14 @@ function AdminRoutes() {
     <Routes>
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
       <Route path="/AdminTicketBookings" element={<AdminTicketBookings/>}/>
+       <Route
+        path="/adminhome"
+        element ={
+          <ProtectedRoute>
+            <AdminHome />
+          </ProtectedRoute>
+        }
+        />
       {/* ✅ fallback for admin */}
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
     </Routes>
@@ -136,7 +146,7 @@ function UserRoutes({ user }) {
           </ProtectedRoute>
         }
         />
-          <Route
+        <Route
         path="/umrahbookings"
         element ={
           <ProtectedRoute>
@@ -144,6 +154,7 @@ function UserRoutes({ user }) {
           </ProtectedRoute>
         }
         />
+        
         {/* ✅ fallback for users */}
         <Route path="*" element={<Navigate to={user ? "/home" : "/login"} />} />
       </Routes>
