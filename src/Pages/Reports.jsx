@@ -44,62 +44,55 @@ export default function Report() {
 
   // 📄 Generate PDF
   const generatePDF = () => {
-    if (!booking) return;
-  
-    const doc = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-  
-    const margin = 15;
-    const contentWidth = pageWidth - 2 * margin;
-    const startX = margin;
-    const startY = margin;
-  
-    // Company Header
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text("OS TRAVELS & TOURS", startX + contentWidth / 2, startY + 10, { align: 'center' });
-  
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text("Your Trusted Travel Partner", startX + contentWidth / 2, startY + 16, { align: 'center' });
-  
-    // Report Title
-    doc.setFillColor(240, 240, 240);
-    doc.rect(startX, startY + 22, contentWidth, 8, 'F');
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text("VISA BOOKING REPORT", startX + contentWidth / 2, startY + 28, { align: 'center' });
-  
-    // Customer Information Table
-    autoTable(doc, {
-      startY: startY + 34,
-      margin: { left: startX, right: startX },
-      tableWidth: contentWidth,
-      head: [["Field", "Details"]],
-      headStyles: { fillColor: [80, 80, 80], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
-      body: [
-        ["Passport Number", booking.passport || "-"],
-        ["Full Name", booking.fullName || "-"],
-        ["Visa Type", booking.visaType || "-"],
-        ["Application Date", booking.date || "-"],
-        ["Expiry Date", booking.expiryDate || "-"],
-        ["Country", booking.country || "-"],
-        ["Visa Status", booking.visaStatus || "-"],
-        ["Total Fee", `${booking.totalFee || "0"}`],
-        ["Received Fee", `${booking.receivedFee || "0"}`],
-        ["Remaining Fee", `${booking.remainingFee || "0"}`],
-        ["Payment Status", booking.paymentStatus || "-"],
-        ["Email", booking.email || "-"],
-        ["Phone", booking.phone || "-"],
-        ["Remarks", booking.remarks || "No remarks"],
-      ],
-      styles: { fontSize: 8, cellPadding: 2, lineColor: [200, 200, 200], lineWidth: 0.1 },
-      alternateRowStyles: { fillColor: [248, 248, 248] },
-    });
-  
-    doc.save(`OS_Travels_Booking_${booking.passport}_${new Date().toISOString().split('T')[0]}.pdf`);
-  };
+  if (!booking) return;
+
+  const doc = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 15;
+  const contentWidth = pageWidth - 2 * margin;
+  const startX = margin;
+  const startY = margin;
+
+  // Company Header
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text("OS TRAVELS & TOURS", startX + contentWidth / 2, startY + 10, { align: 'center' });
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text("Your Trusted Travel Partner", startX + contentWidth / 2, startY + 16, { align: 'center' });
+
+  // Report Title
+  doc.setFillColor(240, 240, 240);
+  doc.rect(startX, startY + 22, contentWidth, 8, 'F');
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text("VISA BOOKING REPORT", startX + contentWidth / 2, startY + 28, { align: 'center' });
+
+  // Compact Customer Information Table
+  autoTable(doc, {
+    startY: startY + 34,
+    margin: { left: startX, right: startX },
+    tableWidth: contentWidth,
+    head: [["Field 1", "Value 1", "Field 2", "Value 2"]],
+    headStyles: { fillColor: [80, 80, 80], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+    body: [
+      ["Passport Number", booking.passport || "-", "Full Name", booking.fullName || "-"],
+      ["Visa Type", booking.visaType || "-", "Application Date", booking.date || "-"],
+      ["Expiry Date", booking.expiryDate || "-", "Sent To Embassy", booking.sentToEmbassy || "-"],
+      ["Received From Embassy", booking.receivedFromEmbassy || "-", "Country", booking.country || "-"],
+      ["Visa Status", booking.visaStatus || "-", "Total Fee", `${booking.totalFee || "0"}`],
+      ["Received Fee", `${booking.receivedFee || "0"}`, "Remaining Fee", `${booking.remainingFee || "0"}`],
+      ["Payment Status", booking.paymentStatus || "-", "Email", booking.email || "-"],
+      ["Phone", booking.phone || "-", "Remarks", booking.remarks || "No remarks"],
+    ],
+    styles: { fontSize: 8, cellPadding: 2, lineColor: [200, 200, 200], lineWidth: 0.1 },
+    alternateRowStyles: { fillColor: [248, 248, 248] },
+  });
+
+  doc.save(`OS_Travels_Booking_${booking.passport}_${new Date().toISOString().split('T')[0]}.pdf`);
+};
+
   
   // Show message if not logged in
   if (!user) {
