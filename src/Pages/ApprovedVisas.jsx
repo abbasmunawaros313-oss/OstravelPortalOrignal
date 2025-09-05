@@ -134,34 +134,37 @@ export default function ApprovedVisas() {
     });
   };
 
-  // ✅ FIXED: Proper duplicate passport check (only within user's records)
-  const checkDuplicatePassport = async (passportNumber, excludeId = null) => {
-    if (!user || !passportNumber || passportNumber.trim() === "") {
-      return false; // Empty passport is not a duplicate
+ 
+ // ✅ FIXED: Check duplicate by passport + country
+const checkDuplicatePassport = async (passportNumber, country, excludeId = null) => {
+  if (!user || !passportNumber || passportNumber.trim() === "") {
+    return false; // Empty passport is not a duplicate
+  }
+
+  try {
+    const q = query(
+      collection(db, "bookings"),
+      where("userId", "==", user.uid),
+      where("passport", "==", passportNumber.trim()),
+      where("country", "==", (country || "").trim()) // ✅ check country too
+    );
+    const snapshot = await getDocs(q);
+
+    // Check if any document with this passport+country exists (excluding current one)
+    const duplicates = snapshot.docs.filter(doc => doc.id !== excludeId);
+
+    if (duplicates.length > 0) {
+      console.log("Duplicate found:", passportNumber, country);
+      return true;
     }
 
-    try {
-      const q = query(
-        collection(db, "bookings"),
-        where("userId", "==", user.uid),
-        where("passport", "==", passportNumber.trim())
-      );
-      const snapshot = await getDocs(q);
+    return false;
+  } catch (error) {
+    console.error("Error checking duplicate:", error);
+    return false;
+  }
+};
 
-      // Check if any document with this passport exists (excluding current one)
-      const duplicates = snapshot.docs.filter(doc => doc.id !== excludeId);
-      
-      if (duplicates.length > 0) {
-        console.log("Duplicate passport found:", passportNumber, "in documents:", duplicates.map(d => d.id));
-        return true;
-      }
-      
-      return false;
-    } catch (error) {
-      console.error("Error checking duplicate:", error);
-      return false;
-    }
-  };
 
   // ✅ FIXED: Save edited data with better validation
   const saveEdit = async (id) => {
