@@ -18,6 +18,7 @@ import {
   FaSearch,
   FaTimesCircle,
 } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 export default function AdminTicketBookings() {
   const [bookings, setBookings] = useState([]);
@@ -39,6 +40,11 @@ export default function AdminTicketBookings() {
     return () => unsub();
   }, []);
 
+  const navigate = useNavigate();
+const handleClick = ()=>{
+    navigate("/admin-dashboard");
+
+}
   // ---------- Date helpers ----------
   const stripTime = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const inSameDay = (a, b) => stripTime(a).getTime() === stripTime(b).getTime();
@@ -201,6 +207,11 @@ export default function AdminTicketBookings() {
       {/* Top Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-bold tracking-tight">Ticket Bookings</h2>
+
+        <button
+         onClick={handleClick} 
+        className="bg-green-200 text-xl px-5 py-3 font-semibold rounded hover:bg-green-500 hover:text-white  cursor-pointer">
+        Go To Visa Dashboard </button>
 
         <div className="flex flex-wrap items-center gap-3">
           <select
