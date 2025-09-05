@@ -19,6 +19,7 @@ import {
   FaTimesCircle,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import AdminNavbar from "../Components/AdminNavbar";
 
 export default function AdminTicketBookings() {
   const [bookings, setBookings] = useState([]);
@@ -203,15 +204,16 @@ const handleClick = ()=>{
   };
 
   return (
+    <>
+     <AdminNavbar/>
     <div className="max-w-7xl mx-auto p-6 space-y-6">
       {/* Top Bar */}
+     
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-bold tracking-tight">Ticket Bookings</h2>
 
-        <button
-         onClick={handleClick} 
-        className="bg-green-200 text-xl px-5 py-3 font-semibold rounded hover:bg-green-500 hover:text-white  cursor-pointer">
-        Go To Visa Dashboard </button>
+       
+
 
         <div className="flex flex-wrap items-center gap-3">
           <select
@@ -490,5 +492,6 @@ const handleClick = ()=>{
 )}
 
     </div>
+    </>
   );
 }
