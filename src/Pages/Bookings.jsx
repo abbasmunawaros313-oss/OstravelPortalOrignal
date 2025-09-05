@@ -15,6 +15,8 @@ export default function Bookings() {
     fullName: "",
     visaType: "",
     date: today,
+    sentToEmbassy: "",
+    receivedFromEmbassy: "",
     totalFee: "",
     receivedFee: "",
     remainingFee: "",
@@ -148,6 +150,8 @@ export default function Bookings() {
         phone: "",
         expiryDate: "",
         remarks: "",
+        sentToEmbessy:"",
+        receivedFromEmbessy:"",
       });
       setErrors({});
     } catch (error) {
@@ -189,6 +193,8 @@ export default function Bookings() {
               options: ["Business", "Tourism", "Family Visit", "National Visa"],
             },
             { label: "Application Date", name: "date", type: "date", readonly: true },
+            { label: "Sent To Embassy", name: "sentToEmbassy", type: "text", placeholder: "20/sep/2025" },
+            { label: "Received From Embassy", name: "receivedFromEmbassy", type: "text", placeholder: "25/sep/2025" },
             { label: "Country", name: "country", type: "text", placeholder: "e.g. UAE" },
             {
               label: "Visa Status",
