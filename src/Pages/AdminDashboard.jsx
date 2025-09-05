@@ -41,6 +41,7 @@ import toast from "react-hot-toast";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Link, useNavigate } from "react-router-dom";
+import AdminNavbar from "../Components/AdminNavbar";
 
 export default function AdminDashboard() {
   const { user, isAdmin, logout } = useAuth();
@@ -445,7 +446,10 @@ export default function AdminDashboard() {
     }
   };
 
+
   return (
+    <>
+    <AdminNavbar/>
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
@@ -475,13 +479,7 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
-      <div className="flex justify-center items-center">
-         <button onClick={HandleClick}
-         className="mt-10 px-5 py-3 bg-green-200 cursor-pointer border-none text-xl shadow-2xl rounded-xl hover:bg-green-400 hover:text-white"
-         >
-          Go to Ticket Bookings
-         </button>
-      </div>
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -1134,5 +1132,6 @@ export default function AdminDashboard() {
         </div>
       )}
     </div>
+    </>
   );
 }
