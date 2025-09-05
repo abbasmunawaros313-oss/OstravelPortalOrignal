@@ -48,6 +48,15 @@ function AdminRoutes() {
           </ProtectedRoute>
         }
         />
+       <Route
+        path="/umrahbookings"
+        element ={
+          <ProtectedRoute>
+            <UmmrahBokkingDet/>
+          </ProtectedRoute>
+        }
+        />
+
       {/* ✅ fallback for admin */}
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
     </Routes>
