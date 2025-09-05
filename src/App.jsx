@@ -19,6 +19,7 @@ import AdminTicketBookings from "./Pages/AdminTicketBookings";
 import UmmrahBookings from "./Pages/UmmrahBookings";
 import AdminHome from "./Pages/AdminHome";
 import UmmrahBokkingDet from "./Pages/UmmrahBokkingDet";
+
 // 🔒 Protected Route
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -48,7 +49,7 @@ function AdminRoutes() {
           </ProtectedRoute>
         }
         />
-       <Route
+        <Route
         path="/umrahbookings"
         element ={
           <ProtectedRoute>
