@@ -56,17 +56,15 @@ export default function ApprovedVisas() {
         }
 
         // ✅ Remove duplicates by passport (keep first/latest)
-        const unique = [];
-        const seen = new Set();
-        for (const b of filteredData) {
-          if (b.passport && !seen.has(b.passport)) {
-            unique.push(b);
-            seen.add(b.passport);
-          } else if (!b.passport) {
-            // Include records without passport
-            unique.push(b);
-          }
-        }
+              const unique = [];
+                const seen = new Set();
+                 for (const b of filteredData) {
+                  const key = `${b.passport || ""}-${b.country || ""}`; // unique per passport+country
+                   if (!seen.has(key)) {
+                    unique.push(b);
+                     seen.add(key);
+                        }
+                     }
 
         setBookings(unique);
       },
