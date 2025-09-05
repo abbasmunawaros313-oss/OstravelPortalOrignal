@@ -35,7 +35,7 @@ function AdminNavbar() {
             Tickets
           </Link>
           <Link
-            href="/umrah-bookings"
+            to={"/umrahbookings"}
             className="text-gray-700 font-medium hover:text-blue-600 transition"
           >
             Umrah Bookings
