@@ -190,7 +190,7 @@ export default function Bookings() {
               label: "Visa Type",
               name: "visaType",
               type: "select",
-              options: ["Business", "Tourism", "Family Visit", "National Visa"],
+               options: ["Business", "Tourism", "Family Visit", "National Visa","Appointment"],
             },
             { label: "Application Date", name: "date", type: "date", readonly: true },
             { label: "Sent To Embassy", name: "sentToEmbassy", type: "text", placeholder: "20/sep/2025" },
