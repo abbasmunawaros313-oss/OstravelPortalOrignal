@@ -23,7 +23,7 @@ export default function Report() {
   const [loading, setLoading] = useState(false);
 
   // 🔎 Search Booking
-  const handleSearch = async () => {
+ const handleSearch = async () => {
     if (!passport) {
       toast.error("Enter a passport number");
       return;
@@ -32,16 +32,23 @@ export default function Report() {
     try {
       const q = query(collection(db, "bookings"), where("passport", "==", passport));
       const snapshot = await getDocs(q);
-      if (!snapshot.empty) {
-        const results = snapshot.docs.map((doc) => doc.data());
-        setBookings(results);
-        setSelectedBooking(null);
-        toast.success(`${results.length} booking(s) found! Select one.`);
-      } else {
-        setBookings([]);
-        setSelectedBooking(null);
-        toast.error("No booking found");
-      }
+    if (!snapshot.empty) {
+  const results = snapshot.docs.map((doc) => doc.data());
+  setBookings(results);
+
+  if (results.length === 1) {
+    setSelectedBooking(results[0]); // Auto-select if only 1
+  } else {
+    setSelectedBooking(null); // Require manual selection
+  }
+
+  toast.success(`${results.length} booking(s) found!`);
+} else {
+  setBookings([]);
+  setSelectedBooking(null);
+  toast.error("No booking found");
+}
+
     } catch (error) {
       console.error("Error fetching booking:", error);
       toast.error("Error fetching booking");
@@ -113,6 +120,7 @@ export default function Report() {
         ["Received Fee", `${booking.receivedFee || "0"}`, "Remaining Fee", `${booking.remainingFee || "0"}`],
         ["Payment Status", booking.paymentStatus || "-", "Email", booking.email || "-"],
         ["Phone", booking.phone || "-", "Remarks", booking.remarks || "No remarks"],
+        ["Reference", booking.embassyFee || "-", "", ""],
       ],
       styles: { fontSize: 8, cellPadding: 2, lineColor: [200, 200, 200], lineWidth: 0.1 },
       alternateRowStyles: { fillColor: [248, 248, 248] },
