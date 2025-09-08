@@ -130,8 +130,11 @@ for (const b of filteredData) {
       receivedFee: booking.receivedFee || "",
       remainingFee: booking.remainingFee || "",
       paymentStatus: booking.paymentStatus || "Unpaid",
-      visaStatus: booking.visaStatus || "Processing",
       reference: booking.embassyFee || "",
+      sentToEmbessy: booking.sentToEmbassy || "",
+      reciveFromEmbessy: booking.receiveFromEmbassy || "",
+      visaStatus: booking.visaStatus || "Processing",
+      
     });
   };
 
@@ -223,6 +226,10 @@ const checkDuplicatePassport = async (passportNumber, country, excludeId = null)
       if (editData.remainingFee) updateData.remainingFee = editData.remainingFee;
       if (editData.paymentStatus) updateData.paymentStatus = editData.paymentStatus;
       if (editData.visaStatus) updateData.visaStatus = editData.visaStatus;
+      if (editData.reference) updateData.embassyFee = editData.reference.trim();
+      if (editData.sentToEmbessy) updateData.sentToEmbassy = editData.sentToEmbessy.trim();
+      if (editData.reciveFromEmbessy) updateData.receiveFromEmbassy = editData.reciveFromEmbessy.trim();
+
 
       await updateDoc(docRef, updateData);
       
@@ -415,6 +422,9 @@ const checkDuplicatePassport = async (passportNumber, country, excludeId = null)
               <th className="px-4 py-3">Remaining Fee</th>
               <th className="px-4 py-3">Payment</th>
               <th className="px-4 py-3">Visa Status</th>
+              <th className="px-4 py-3">Reference</th>
+              <th className="px-4 py-3">Sent to Embassy</th>
+              <th className="px-4 py-3">Received from Embassy</th>
               <th className="px-4 py-3">Actions</th>
             </tr>
           </thead>
@@ -552,6 +562,39 @@ const checkDuplicatePassport = async (passportNumber, country, excludeId = null)
                         <option value="Processing">Processing</option>
                       </select>
                     </td>
+                    <td className="px-4 py-2">
+                      <input
+                          value={editData.reference}
+                        onChange={(e) =>
+                          setEditData({ ...editData, reference: e.target.value })
+                        }
+                          className="border px-2 py-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Reference"
+                          disabled={loading}
+                      />
+                    </td>
+                    <td className="px-4 py-2">
+                      <input
+                          value={editData.sentToEmbessy}
+                        onChange={(e) =>
+                          setEditData({ ...editData, sentToEmbessy: e.target.value })
+                        }
+                          className="border px-2 py-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Sent to Embassy"
+                          disabled={loading}
+                      />
+                    </td>
+                    <td className="px-4 py-2">
+                      <input
+                          value={editData.reciveFromEmbessy}
+                        onChange={(e) =>
+                          setEditData({ ...editData, reciveFromEmbessy: e.target.value })
+                        }
+                          className="border px-2 py-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Received from Embassy"
+                          disabled={loading}
+                      />
+                    </td>
                       <td className="px-4 py-2">
                         <div className="flex gap-2">
                       <button
@@ -615,6 +658,9 @@ const checkDuplicatePassport = async (passportNumber, country, excludeId = null)
                         <option value="Processing">Processing</option>
                       </select>
                     </td>
+                    <td className="px-4 py-2">{b.embassyFee || "-"}</td>
+                    <td className="px-4 py-2">{b.sentToEmbassy || "-"}</td>
+                    <td className="px-4 py-2">{b.receiveFromEmbassy || "-"}</td>
                       <td className="px-4 py-2">
                         <div className="flex gap-2">
                       <button
