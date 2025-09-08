@@ -56,15 +56,15 @@ export default function ApprovedVisas() {
         }
 
         // ✅ Remove duplicates by passport (keep first/latest)
-              const unique = [];
-                const seen = new Set();
-                 for (const b of filteredData) {
-                  const key = `${b.passport || ""}-${b.country || ""}`; // unique per passport+country
-                   if (!seen.has(key)) {
-                    unique.push(b);
-                     seen.add(key);
-                        }
-                     }
+      const unique = [];
+const seen = new Set();
+for (const b of filteredData) {
+  const key = `${b.passport || ""}-${b.country || ""}`; // unique per passport+country
+  if (!seen.has(key)) {
+    unique.push(b);
+    seen.add(key);
+  }
+}
 
         setBookings(unique);
       },
@@ -131,11 +131,12 @@ export default function ApprovedVisas() {
       remainingFee: booking.remainingFee || "",
       paymentStatus: booking.paymentStatus || "Unpaid",
       visaStatus: booking.visaStatus || "Processing",
+      reference: booking.embassyFee || "",
     });
   };
 
- 
- // ✅ FIXED: Check duplicate by passport + country
+  // ✅ FIXED: Proper duplicate passport check (only within user's records)
+  // ✅ FIXED: Check duplicate by passport + country
 const checkDuplicatePassport = async (passportNumber, country, excludeId = null) => {
   if (!user || !passportNumber || passportNumber.trim() === "") {
     return false; // Empty passport is not a duplicate
@@ -164,7 +165,6 @@ const checkDuplicatePassport = async (passportNumber, country, excludeId = null)
     return false;
   }
 };
-
 
   // ✅ FIXED: Save edited data with better validation
   const saveEdit = async (id) => {
@@ -218,7 +218,7 @@ const checkDuplicatePassport = async (passportNumber, country, excludeId = null)
       if (editData.visaType) updateData.visaType = editData.visaType.trim();
       if (editData.country) updateData.country = editData.country.trim();
       if (editData.date) updateData.date = editData.date;
-      if (editData.totalFee) updateData.totalFee = editData.totalFee;
+     // if (editData.totalFee) updateData.totalFee = editData.totalFee;
       if (editData.receivedFee) updateData.receivedFee = editData.receivedFee;
       if (editData.remainingFee) updateData.remainingFee = editData.remainingFee;
       if (editData.paymentStatus) updateData.paymentStatus = editData.paymentStatus;
@@ -408,6 +408,7 @@ const checkDuplicatePassport = async (passportNumber, country, excludeId = null)
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Visa Type</th>
               <th className="px-4 py-3">Country</th>
+           
               <th className="px-4 py-3">Date</th>
               <th className="px-4 py-3">Total Fee</th>
               <th className="px-4 py-3">Received Fee</th>
@@ -466,6 +467,7 @@ const checkDuplicatePassport = async (passportNumber, country, excludeId = null)
                           disabled={loading}
                       />
                     </td>
+                    
                     <td className="px-4 py-2">
                       <input
                           value={editData.country}
@@ -489,16 +491,8 @@ const checkDuplicatePassport = async (passportNumber, country, excludeId = null)
                       />
                     </td>
                     <td className="px-4 py-2">
-                      <input
-                          type="number"
-                          value={editData.totalFee}
-                        onChange={(e) =>
-                          setEditData({ ...editData, totalFee: e.target.value })
-                        }
-                          className="border px-2 py-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Fee"
-                          disabled={loading}
-                        />
+                     
+                         <span>{editData.totalFee}</span>
                       </td>
                       <td className="px-4 py-2">
                         <input
@@ -630,13 +624,7 @@ const checkDuplicatePassport = async (passportNumber, country, excludeId = null)
                       >
                         Edit
                       </button>
-                      <button
-                        onClick={() => handleDelete(b)}
-                            disabled={loading}
-                            className="bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                      >
-                        Delete
-                      </button>
+                     
                         </div>
                     </td>
                   </>
