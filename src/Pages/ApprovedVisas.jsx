@@ -226,9 +226,9 @@ const checkDuplicatePassport = async (passportNumber, country, excludeId = null)
       if (editData.remainingFee) updateData.remainingFee = editData.remainingFee;
       if (editData.paymentStatus) updateData.paymentStatus = editData.paymentStatus;
       if (editData.visaStatus) updateData.visaStatus = editData.visaStatus;
-      if (editData.reference) updateData.embassyFee = editData.reference.trim();
-      if (editData.sentToEmbessy) updateData.sentToEmbassy = editData.sentToEmbessy.trim();
-      if (editData.reciveFromEmbessy) updateData.receiveFromEmbassy = editData.reciveFromEmbessy.trim();
+      if (editData.reference) updateData.embassyFee = (editData.reference || "").trim();
+      if (editData.sentToEmbessy) updateData.sentToEmbassy = (editData.sentToEmbessy || "").trim();
+      if (editData.reciveFromEmbessy)updateData.receiveFromEmbassy = (editData.reciveFromEmbessy || "").trim();
 
 
       await updateDoc(docRef, updateData);
