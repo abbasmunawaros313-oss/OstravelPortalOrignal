@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
-
+import { MdLogout } from "react-icons/md";
+import { useAuth } from "../context/AuthContext";
 function AdminNavbar() {
+    const { logout } = useAuth();
     return(
          <nav className="backdrop-blur-lg bg-white/20 border-b border-white/30 shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
@@ -43,8 +45,8 @@ function AdminNavbar() {
         </div>
 
         {/* Profile / Admin Icon */}
-        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-500 to-blue-500 flex items-center justify-center text-white font-bold cursor-pointer shadow-md">
-          A
+        <div className="">
+          <button onClick={logout} className=" flex items-center bg-red-500 text-white px-4 py-2 rounded-md cursor-pointer">  <MdLogout />Logout</button>
         </div>
       </div>
     </nav>
