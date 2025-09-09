@@ -505,7 +505,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                <p className="text-2xl font-bold text-green-600">${stats.totalRevenue.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-green-600">{stats.totalRevenue.toFixed(2)}</p>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                 <MdAttachMoney className="text-green-600 text-xl" />
@@ -517,7 +517,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Pending Revenue</p>
-                <p className="text-2xl font-bold text-orange-600">${stats.pendingRevenue.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-orange-600">{stats.pendingRevenue.toFixed(2)}</p>
               </div>
               <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                 <MdWarning className="text-orange-600 text-xl" />
@@ -807,9 +807,9 @@ export default function AdminDashboard() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">${booking.totalFee || "0"}</div>
-                          <div className="text-sm text-gray-500">Received: ${booking.receivedFee || "0"}</div>
-                          <div className="text-sm text-gray-500">Remaining: ${booking.remainingFee || "0"}</div>
+                          <div className="text-sm font-medium text-gray-900">{booking.totalFee || "0"}</div>
+                          <div className="text-sm text-gray-500">Received: {booking.receivedFee || "0"}</div>
+                          <div className="text-sm text-gray-500">Remaining: {booking.remainingFee || "0"}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
