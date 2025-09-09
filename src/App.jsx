@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-
+import EmployeeRecord from "./Pages/EmployeeRecord";
 import Login from "./Authentication/Login";
 import Bookings from "./Pages/Bookings";
 import ApprovedVisas from "./Pages/ApprovedVisas";
@@ -164,6 +164,14 @@ function UserRoutes({ user }) {
           </ProtectedRoute>
         }
         />
+         <Route
+      path="employee-record"
+      element = {
+      <ProtectedRoute>
+        <EmployeeRecord/>
+      </ProtectedRoute>
+      }
+      />
         
         {/* ✅ fallback for users */}
         <Route path="*" element={<Navigate to={user ? "/home" : "/login"} />} />
