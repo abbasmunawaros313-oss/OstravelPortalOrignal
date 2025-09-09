@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Footer from "../Components/Footer";
-
+import {FaKaaba} from "react-icons/fa";
 const quickLinks = [
   {
     title: "My Bookings",
@@ -60,7 +60,7 @@ const services = [
     title: "UMRAH BOOKINGS ",
     description: "Stay safe abroad with comprehensive travel coverage.",
     to:"/umrahbookings",
-    icon: "🛡️",
+    icon: <FaKaaba />,
     color: "from-green-500 to-emerald-400",
   },
   {
