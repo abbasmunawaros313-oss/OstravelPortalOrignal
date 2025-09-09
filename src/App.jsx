@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import EmployeeRecord from "./Pages/EmployeeRecord";
+
 import Login from "./Authentication/Login";
 import Bookings from "./Pages/Bookings";
 import ApprovedVisas from "./Pages/ApprovedVisas";
@@ -19,6 +19,7 @@ import AdminTicketBookings from "./Pages/AdminTicketBookings";
 import UmmrahBookings from "./Pages/UmmrahBookings";
 import AdminHome from "./Pages/AdminHome";
 import UmmrahBokkingDet from "./Pages/UmmrahBokkingDet";
+import EmployeeRecord from "./Pages/EmployeeRecord";
 
 // 🔒 Protected Route
 const ProtectedRoute = ({ children }) => {
@@ -57,7 +58,14 @@ function AdminRoutes() {
           </ProtectedRoute>
         }
         />
-
+      <Route
+      path="employee-record"
+      element = {
+      <ProtectedRoute>
+        <EmployeeRecord/>
+      </ProtectedRoute>
+      }
+      />
       {/* ✅ fallback for admin */}
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
     </Routes>
@@ -164,14 +172,6 @@ function UserRoutes({ user }) {
           </ProtectedRoute>
         }
         />
-         <Route
-      path="employee-record"
-      element = {
-      <ProtectedRoute>
-        <EmployeeRecord/>
-      </ProtectedRoute>
-      }
-      />
         
         {/* ✅ fallback for users */}
         <Route path="*" element={<Navigate to={user ? "/home" : "/login"} />} />
