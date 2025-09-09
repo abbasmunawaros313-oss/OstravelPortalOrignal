@@ -298,8 +298,9 @@ export default function AdminHome() {
 
         {/* Summary Quick Cards */}
         <div className="grid md:grid-cols-4 gap-6 mb-10">
-         <Link to="/employee-record">
+         
           <div className="rounded-xl shadow-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white p-6 flex flex-col justify-between">
+          <Link to="/employee-record">
             <div className="flex items-start gap-4">
               <div className="w-14 h-14 rounded-lg bg-white/20 flex items-center justify-center text-2xl">
                 <FaUsers />
@@ -317,9 +318,10 @@ export default function AdminHome() {
                 <div className="font-semibold">{bookingsByDay.reduce((a,b)=>a+b,0)} bookings</div>
               </div>
             </div>
-          </div>
-          </Link>
+               </Link>
 
+          </div>
+       
           <div
           onClick={() => {
     if (countriesRef.current) {
@@ -348,6 +350,7 @@ export default function AdminHome() {
           </div>
 
           <div className="rounded-xl shadow-lg bg-gradient-to-br from-fuchsia-500 to-pink-600 text-white p-6 flex flex-col justify-between">
+            <Link to={"/employee-record"} className="flex items-start gap-4">
             <div className="flex items-start gap-4">
               <div className="w-14 h-14 rounded-lg bg-white/20 flex items-center justify-center text-2xl">
                 <FaChartBar />
@@ -361,6 +364,7 @@ export default function AdminHome() {
             <div className="mt-4 text-sm opacity-90">
               <div>Recent activity</div>
             </div>
+            </Link>
           </div>
 
           <div className="rounded-xl shadow-lg bg-gradient-to-br from-yellow-400 to-amber-500 text-white p-6 flex flex-col justify-between">
