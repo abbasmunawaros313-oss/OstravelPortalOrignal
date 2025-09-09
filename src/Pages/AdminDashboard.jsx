@@ -362,8 +362,8 @@ export default function AdminDashboard() {
         ["Rejected", stats.rejected.toString(), ""],
         ["Paid", stats.paid.toString(), ""],
         ["Unpaid", stats.unpaid.toString(), ""],
-        ["Total Revenue", "", `$${stats.totalRevenue.toFixed(2)}`],
-        ["Pending Revenue", "", `$${stats.pendingRevenue.toFixed(2)}`]
+        ["Total Revenue", "", `${stats.totalRevenue.toFixed(2)}`],
+        ["Pending Revenue", "", `${stats.pendingRevenue.toFixed(2)}`]
       ],
       styles: {
         fontSize: 10,
