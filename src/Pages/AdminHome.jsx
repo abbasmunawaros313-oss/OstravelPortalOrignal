@@ -1,8 +1,10 @@
 // AdminHome.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState ,useRef} from "react";
 import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
 import toast from "react-hot-toast";
+import { Link } from "react-router-dom";
+
 import {
   FaUserTie,
   FaGlobe,
@@ -158,6 +160,7 @@ export default function AdminHome() {
       return acc;
     }, {});
   }, [bookings]);
+  const countriesRef = useRef(null);
 
   const countries = useMemo(() => {
     return bookings.reduce((acc, b) => {
@@ -232,6 +235,11 @@ export default function AdminHome() {
     setSelectedEmployee(null);
     setSelectedCountry((prev) => (prev === country ? null : country));
     setCountrySearch("");
+
+    //for scrool 
+     if (countriesRef.current) {
+    countriesRef.current.scrollIntoView({ behavior: "smooth" });
+  }
   };
 
   // Make square cards: using aspect-square utility (Tailwind >= 3.2). If not available, fallback with padding hack.
@@ -290,6 +298,7 @@ export default function AdminHome() {
 
         {/* Summary Quick Cards */}
         <div className="grid md:grid-cols-4 gap-6 mb-10">
+         <Link to="/employee-record">
           <div className="rounded-xl shadow-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white p-6 flex flex-col justify-between">
             <div className="flex items-start gap-4">
               <div className="w-14 h-14 rounded-lg bg-white/20 flex items-center justify-center text-2xl">
@@ -309,9 +318,16 @@ export default function AdminHome() {
               </div>
             </div>
           </div>
+          </Link>
 
-          <div className="rounded-xl shadow-lg bg-gradient-to-br from-emerald-500 to-green-600 text-white p-6 flex flex-col justify-between">
-            <div className="flex items-start gap-4">
+          <div
+          onClick={() => {
+    if (countriesRef.current) {
+      countriesRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }}
+          className="rounded-xl shadow-lg bg-gradient-to-br from-emerald-500 to-green-600 text-white p-6 flex flex-col justify-between">
+            <div className="flex items-start gap-4 cursor-pointer">
               <div className="w-14 h-14 rounded-lg bg-white/20 flex items-center justify-center text-2xl">
                 <FaGlobe />
               </div>
@@ -459,8 +475,8 @@ export default function AdminHome() {
         </section>
 
         {/* Countries grid as square cards */}
-        <section>
-          <h2 className="text-4xl  pt-4 font-semibold mb-6 text-center border-b pb-2">Countries</h2>
+        <section  ref={countriesRef}>
+          <h2  className="text-4xl  pt-4 font-semibold mb-6 text-center border-b pb-2">Countries</h2>
 
           {loading ? (
             <div className="text-center py-12">Loading...</div>
