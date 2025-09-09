@@ -10,7 +10,7 @@ import { doc, getDoc } from "firebase/firestore";
 const AuthContext = createContext();
 
 // ⏰ Inactivity time limit (15 mins example)
-const INACTIVITY_LIMIT = 2 * 60 * 1000; 
+const INACTIVITY_LIMIT = 15 * 60 * 1000; 
 // ⏳ Warning popup before logout (1 min earlier)
 const WARNING_TIME = 1 * 60 * 1000;       
 
