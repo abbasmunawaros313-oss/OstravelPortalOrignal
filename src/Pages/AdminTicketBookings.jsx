@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast"; 
 import {
   collection,
   query,
@@ -160,7 +161,18 @@ const handleClick = ()=>{
       setSaving(false);
     }
   };
-  
+  const deleteBooking = async (id) => {
+  const confirm = window.confirm("Are you sure you want to delete this booking?");
+  if (!confirm) return;
+
+  try {
+    await deleteDoc(doc(db, "ticketBookings", id));
+    toast.success("Booking deleted successfully!");
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to delete booking!");
+  }
+};
   // ---------- PDF ----------
   const exportPDF = () => {
     const docPDF = new jsPDF();
@@ -485,7 +497,7 @@ const handleClick = ()=>{
           ) : (
             "Save"
           )}
-        </button>
+        </button> 
       </div>
     </div>
   </div>
@@ -495,3 +507,4 @@ const handleClick = ()=>{
     </>
   );
 }
+
