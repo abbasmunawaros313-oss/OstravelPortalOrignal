@@ -468,13 +468,7 @@ export default function AdminDashboard() {
               <div className="text-sm text-gray-600">
                 Logged in as: <span className="font-semibold text-purple-600">{user?.email}</span>
               </div>
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-              >
-                <MdLogout />
-                Logout
-              </button>
+            
             </div>
           </div>
         </div>
