@@ -367,7 +367,7 @@ const handleClick = ()=>{
                 </td>
               </tr>
             ) : (
-              filteredBookings.map((b) => (
+              filteredBookings.map((b,index) => (
                 <tr key={b.id} className="hover:bg-gray-50 transition">
                   <td className="px-4 py-2 border-b text-gray-600 font-medium"> {index + 1}  </td>
                   <td className="px-4 py-2 border-b">{b.pnr || "-"}</td>
