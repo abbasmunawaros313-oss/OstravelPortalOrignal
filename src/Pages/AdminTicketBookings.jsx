@@ -266,7 +266,7 @@ const handleClick = ()=>{
             </div>
           </div>
           <p className="mt-4 text-3xl font-extrabold text-blue-700">
-            ${fmtMoney(totals.earnings)}
+            {fmtMoney(totals.earnings)}
           </p>
           <p className="mt-1 text-xs text-blue-900/60">Range: {dateFilter}</p>
         </div>
@@ -283,7 +283,7 @@ const handleClick = ()=>{
             </div>
           </div>
           <p className="mt-4 text-3xl font-extrabold text-amber-700">
-            ${fmtMoney(totals.payable)}
+            {fmtMoney(totals.payable)}
           </p>
           <p className="mt-1 text-xs text-amber-900/60">Range: {dateFilter}</p>
         </div>
@@ -300,7 +300,7 @@ const handleClick = ()=>{
             </div>
           </div>
           <p className="mt-4 text-3xl font-extrabold text-emerald-700">
-            ${fmtMoney(totals.profit)}
+            {fmtMoney(totals.profit)}
           </p>
           <p className="mt-1 text-xs text-emerald-900/60">Range: {dateFilter}</p>
         </div>
@@ -374,10 +374,10 @@ const handleClick = ()=>{
                   <td className="px-4 py-2 border-b">
                     {(b.from || "-") + " → " + (b.to || "-")}
                   </td>
-                  <td className="px-4 py-2 border-b">${fmtMoney(b.price)}</td>
-                  <td className="px-4 py-2 border-b">${fmtMoney(b.payable)}</td>
+                  <td className="px-4 py-2 border-b">{fmtMoney(b.price)}</td>
+                  <td className="px-4 py-2 border-b">{fmtMoney(b.payable)}</td>
                   <td className="px-4 py-2 border-b text-emerald-700 font-semibold">
-                    ${fmtMoney(b.profit)}
+                    {fmtMoney(b.profit)}
                   </td>
                   <td className="px-4 py-2 border-b">{b.status || "-"}</td>
                   <td className="px-4 py-2 border-b">
