@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
+import { useRef } from "react";
 import {
   FaUserTie,
   FaSearch,
@@ -105,7 +106,14 @@ export default function EmployeeRecord() {
   const [globalSearch, setGlobalSearch] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState(null); // email string
   const [showOnlyWithRecords, setShowOnlyWithRecords] = useState(false);
+  
+  const detailsRef = useRef(null); 
 
+    useEffect(() => {
+    if (selectedEmployee && detailsRef.current) {
+      detailsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [selectedEmployee]);
   useEffect(() => {
     let mounted = true;
     const fetchAll = async () => {
@@ -239,7 +247,7 @@ export default function EmployeeRecord() {
 
               {/* Expanded details panel - render below grid */}
               {selectedEmployee && groupedByEmail[selectedEmployee] && (
-                <div className="mt-8">
+                <div ref={detailsRef} className="mt-8">
                   <div className="bg-white rounded-2xl shadow-lg p-6">
                     <EmployeeDetails
                       emp={groupedByEmail[selectedEmployee]}
@@ -481,7 +489,7 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
   return (
     <div>
       {/* header */}
-      <div className="flex items-start justify-between gap-4 mb-4">
+      <div  className="flex items-start justify-between gap-4 mb-4">
         <div>
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-bold text-slate-800">Records for</h2>
@@ -527,7 +535,7 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
       </div>
 
       {/* Filters row */}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
+      <div  className="flex flex-wrap items-center gap-3 mb-6">
         <div className="relative flex-1 min-w-[220px]">
           <FaSearch className="absolute left-3 top-3 text-slate-400" />
           <input
