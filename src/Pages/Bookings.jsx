@@ -47,13 +47,13 @@ export default function Bookings() {
     if (!form.visaType) newErrors.visaType = "Visa type is required.";
     if (!form.totalFee || isNaN(form.totalFee))
       newErrors.totalFee = "Enter valid fee.";
-    if (!form.receivedFee || isNaN(form.receivedFee)) {
-      newErrors.receivedFee = "Enter valid received fee.";
-    } else if (Number(form.receivedFee) < 0) {
-      newErrors.receivedFee = "Received fee cannot be negative.";
-    } else if (Number(form.receivedFee) > Number(form.totalFee)) {
-      newErrors.receivedFee = "Cannot exceed total fee.";
-    }
+    if (form.receivedFee === "" || isNaN(form.receivedFee)) {
+  newErrors.receivedFee = "Enter valid received fee.";
+} else if (Number(form.receivedFee) < 0) {
+  newErrors.receivedFee = "Received fee cannot be negative.";
+} else if (Number(form.receivedFee) > Number(form.totalFee)) {
+  newErrors.receivedFee = "Cannot exceed total fee.";
+}
 
     if (!form.paymentStatus) newErrors.paymentStatus = "Select payment status.";
     if (!form.country) newErrors.country = "Country required.";
