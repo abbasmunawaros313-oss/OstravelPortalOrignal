@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 import {
   collection,
@@ -20,6 +22,7 @@ import {
   FaTimes,
   FaEdit,
   FaSave,
+  FaPrint,
   FaCalendarAlt,
 } from "react-icons/fa";
 import Footer from "../Components/Footer";
@@ -209,6 +212,95 @@ export default function UmmrahBookings() {
     }
   };
 
+
+const generateUmrahPDF = (booking) => {
+
+  if (!booking) return;
+
+  const doc = new jsPDF("p", "mm", "a4");
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 15;
+  const contentWidth = pageWidth - 2 * margin;
+  const startX = margin;
+  const startY = margin;
+
+  // === HEADER ===
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.text("OS TRAVELS & TOURS", pageWidth / 2, startY + 10, { align: "center" });
+
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(10);
+  doc.text("Your Trusted Umrah Partner", pageWidth / 2, startY + 16, { align: "center" });
+
+  doc.setDrawColor(50, 50, 50);
+  doc.line(margin, startY + 20, pageWidth - margin, startY + 20);
+
+  // === REPORT TITLE ===
+  doc.setFillColor(34, 139, 34); // Green theme
+  doc.rect(startX, startY + 25, contentWidth, 8, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(12);
+  doc.text("UMRAH BOOKING REPORT", pageWidth / 2, startY + 31, { align: "center" });
+
+  doc.setTextColor(0, 0, 0);
+
+  // === TABLE ===
+  autoTable(doc, {
+    startY: startY + 38,
+    margin: { left: startX, right: startX },
+    tableWidth: contentWidth,
+    head: [["Field", "Value", "Field", "Value"]],
+    headStyles: {
+      fillColor: [40, 40, 40],
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      fontSize: 9,
+    },
+    body: [
+      ["Full Name", booking.fullName || "-", "Phone", booking.phone || "-"],
+      ["Passport Number", booking.passportNumber || "-", "Visa Number", booking.visaNumber || "-"],
+      ["Vendor", booking.vendor || "-", "Profit", `${booking.profit || 0}`],
+      ["Payable", `PKR ${booking.payable || 0}`, "Received", `PKR ${booking.received || 0}`],
+
+      // Makkah Stay
+      ["Makkah Hotel", booking.makkahHotel || "-", "Nights", booking.makkahNights || "-"],
+      ["Check In", booking.makkahCheckIn || "-", "Check Out", booking.makkahCheckOut || "-"],
+
+      // Madinah Stay
+      ["Madinah Hotel", booking.madinahHotel || "-", "Nights", booking.madinahNights || "-"],
+      ["Check In", booking.madinahCheckIn || "-", "Check Out", booking.madinahCheckOut || "-"],
+
+      // Second Makkah Stay
+      ["2nd Makkah Hotel", booking.makkahagainhotel || "-", "Nights", booking.makkahagainNights || "-"],
+      ["Check In", booking.makkahCheckInagain || "-", "Check Out", booking.makkahCheckOutagain || "-"],
+    ],
+    styles: {
+      fontSize: 9,
+      cellPadding: 3,
+      lineColor: [200, 200, 200],
+      lineWidth: 0.1,
+    },
+    alternateRowStyles: { fillColor: [245, 245, 245] },
+  });
+
+  // === FOOTER ===
+  let finalY = doc.lastAutoTable.finalY + 20;
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(9);
+  doc.text("Authorized by OS Travels & Tours", margin, finalY);
+  doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth - margin, finalY, {
+    align: "right",
+  });
+
+  // Save PDF
+  doc.save(
+    `Umrah_Booking_${booking.passportNumber}_${new Date().toISOString().split("T")[0]}.pdf`
+  );
+};
+
+
   return (
     <div
       className="min-h-screen bg-cover bg-center bg-fixed"
@@ -338,6 +430,7 @@ export default function UmmrahBookings() {
                 onChange={handleChange}
                 className="border px-4 py-3 rounded-xl"
               />
+              
               <input
                 type="date"
                 name="makkahCheckInagain"
@@ -408,25 +501,31 @@ export default function UmmrahBookings() {
                 className="bg-white/95 backdrop-blur-lg rounded-2xl shadow-lg p-6 relative"
               >
                 {/* Actions */}
-                <div className="absolute top-3 right-3 flex gap-2">
+                <div className="absolute top-3 right-3 flex gap-2 cursor-pointer">
                   {editingId === b.id ? (
                     <button
                       onClick={() => saveEdit(b.id)}
-                      className="bg-green-600 text-white px-3 py-1 rounded-md flex items-center gap-1"
+                      className="bg-green-600 cursor-pointer text-white px-3 py-1 rounded-md flex items-center gap-1"
                     >
                       <FaSave /> Save
                     </button>
                   ) : (
                     <button
                       onClick={() => startEdit(b)}
-                      className="bg-blue-600 text-white px-3 py-1 rounded-md flex items-center gap-1"
+                      className="bg-blue-600 cursor-pointer text-white px-3 py-1 rounded-md flex items-center gap-1"
                     >
                       <FaEdit /> Edit
                     </button>
                   )}
                   <button
+                  onClick={() => generateUmrahPDF(b)}
+                  className="bg-green-600 cursor-pointer text-white px-3 py-1 rounded-md flex items-center gap-1"
+                  >
+                    <FaPrint />  Print
+                  </button>
+                  <button
                     onClick={() => closeCard(b.id)}
-                    className="bg-red-600 text-white px-3 py-1 rounded-md flex items-center gap-1"
+                    className="bg-red-600 text-white cursor-pointer px-3 py-1 rounded-md flex items-center gap-1"
                   >
                     <FaTimes /> Close
                   </button>
