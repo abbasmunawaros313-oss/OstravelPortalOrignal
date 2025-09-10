@@ -8,6 +8,7 @@ import { MdAttachMoney, MdCheckCircle, MdWarning } from "react-icons/md";
 import autoTable from "jspdf-autotable";
 import jsPDF from "jspdf";
 import AdminNavbar from "../Components/AdminNavbar";
+import Footer from "../Components/Footer";
 
 // --- Flag Helper ---
 const countryCodes = {
@@ -462,6 +463,7 @@ function CountriesWiseDet() {
         </table>
       </div>
     </div>
+    <Footer/>
     </>
   );
 }
