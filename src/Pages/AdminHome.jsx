@@ -47,6 +47,86 @@ const COUNTRY_TO_ISO = {
   China: "CN",
   Japan: "JP",
   Singapore: "SG",
+  Brazil: "BR",
+  Mexico: "MX",
+  Russia: "RU",
+  Egypt: "EG",
+  Nigeria: "NG",
+  Kenya: "KE",
+  SouthAfrica: "ZA",
+  "South Africa": "ZA",
+  Vietnam: "VN",
+  Indonesia: "ID",
+  Philippines: "PH",
+  Argentina: "AR",
+  Chile: "CL",
+  Colombia: "CO",
+  Peru: "PE",
+  Netherlands: "NL",
+  Belgium: "BE",
+  Sweden: "SE",
+  Norway: "NO",
+  Finland: "FI",
+  Denmark: "DK",
+  Switzerland: "CH",
+  Austria: "AT",
+  Poland: "PL",
+  Portugal: "PT",
+  Greece: "GR",
+  Ireland: "IE",
+  NewZealand: "NZ",
+  "New Zealand": "NZ",
+  Hungary: "HU",
+  Czechia: "CZ",
+  "Czech Republic": "CZ",
+  Romania: "RO",
+  Bulgaria: "BG",
+  Croatia: "HR",
+  Serbia: "RS",
+  Ukraine: "UA",
+  Belarus: "BY",
+  Lithuania: "LT",
+  Latvia: "LV",
+  Estonia: "EE",
+  Iceland: "IS",
+  Luxembourg: "LU",
+  Slovenia: "SI",
+  Slovakia: "SK",
+  Cyprus: "CY",
+  Malta: "MT",
+  Thailand: "TH",
+  Vietnam: "VN",
+  Indonesia: "ID",
+  Philippines: "PH",
+  Bangladesh: "BD",
+  SriLanka: "LK",
+  "Sri Lanka": "LK",
+  Nepal: "NP",
+  Myanmar: "MM",
+  Cambodia: "KH",
+  Laos: "LA",
+  Mongolia: "MN",
+  Iran: "IR",
+  Iraq: "IQ",
+  Afghanistan: "AF",
+  Azerbaijan: "AZ",
+  Armenia: "AM",
+  Georgia: "GE",
+  Kazakhstan: "KZ",
+  Uzbekistan: "UZ",
+  Turkmenistan: "TM",
+  Kyrgyzstan: "KG",
+  Tajikistan: "TJ",
+  Turkmenistan: "TM",
+  SaudiArabia: "SA",
+  UAE: "AE",
+  Kuwait: "KW",
+  Qatar: "QA",
+  Bahrain: "BH",
+  Oman: "OM",
+  Yemen: "YE",
+  
+  
 };
 
 /** Convert ISO code (2 letters) to flag emoji */
@@ -58,16 +138,26 @@ function isoToFlagEmoji(iso) {
 
 /** Try to get a flag emoji from a country name */
 function getFlag(country) {
-  if (!country) return "🌐";
-  const iso = COUNTRY_TO_ISO[country.trim()];
-  if (iso) return isoToFlagEmoji(iso);
-  // try last word (e.g., "Kingdom" won't help, but "United States" etc)
-  const words = country.split(" ").slice(-1)[0];
-  const iso2 = COUNTRY_TO_ISO[words];
-  if (iso2) return isoToFlagEmoji(iso2);
-  // fallback: globe
-  return "🌐";
+  if (!country) return null;
+  const clean = country.trim().toLowerCase();
+
+  // exact match
+  for (const [name, iso] of Object.entries(COUNTRY_TO_ISO)) {
+    if (name.toLowerCase() === clean) {
+      return (
+        <img
+          src={`https://flagcdn.com/w40/${iso.toLowerCase()}.png`}
+          alt={country}
+          className="w-8 h-6 object-cover rounded shadow-sm"
+        />
+      );
+    }
+  }
+
+  // fallback: globe icon
+  return <span className="text-xl">🌐</span>;
 }
+
 
 /** Export list of items to CSV and trigger download */
 function exportToCSV(filename, rows) {
@@ -614,7 +704,7 @@ export default function AdminHome() {
           </div>
         </div>
       )}
-
+   
       <Footer/>
     </div>
   );
