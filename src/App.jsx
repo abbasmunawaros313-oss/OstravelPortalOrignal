@@ -20,6 +20,7 @@ import UmmrahBookings from "./Pages/UmmrahBookings";
 import AdminHome from "./Pages/AdminHome";
 import UmmrahBokkingDet from "./Pages/UmmrahBokkingDet";
 import EmployeeRecord from "./Pages/EmployeeRecord";
+import CountriesWiseDet from "./Pages/CountriesWiseDet";
 
 // 🔒 Protected Route
 const ProtectedRoute = ({ children }) => {
@@ -65,6 +66,14 @@ function AdminRoutes() {
         <EmployeeRecord/>
       </ProtectedRoute>
       }
+      />
+       <Route
+         path="/countrywise-det/:countryName"
+         element={
+           <ProtectedRoute>
+             <CountriesWiseDet />
+           </ProtectedRoute>
+         }
       />
       {/* ✅ fallback for admin */}
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
@@ -172,7 +181,7 @@ function UserRoutes({ user }) {
           </ProtectedRoute>
         }
         />
-        
+       
         {/* ✅ fallback for users */}
         <Route path="*" element={<Navigate to={user ? "/home" : "/login"} />} />
       </Routes>
