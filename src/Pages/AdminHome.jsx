@@ -126,7 +126,6 @@ const COUNTRY_TO_ISO = {
   Oman: "OM",
   Yemen: "YE",
   
-  
 };
 
 /** Convert ISO code (2 letters) to flag emoji */
@@ -327,9 +326,7 @@ export default function AdminHome() {
     setCountrySearch("");
 
     //for scrool 
-     if (countriesRef.current) {
-    countriesRef.current.scrollIntoView({ behavior: "smooth" });
-  }
+    
   };
 
   // Make square cards: using aspect-square utility (Tailwind >= 3.2). If not available, fallback with padding hack.
@@ -569,24 +566,26 @@ export default function AdminHome() {
         </section>
 
         {/* Countries grid as square cards */}
-        <section  ref={countriesRef}>
+        <section ref={countriesRef}  >
           <h2  className="text-4xl  pt-4 font-semibold mb-6 text-center border-b pb-2">Countries</h2>
 
           {loading ? (
             <div className="text-center py-12">Loading...</div>
           ) : (
-            <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div  className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {Object.keys(countries).map((country) => {
                 const list = countries[country];
+                
                 return (
-                  <div
+                  <Link
                     key={country}
+                    to={`/countrywise-det/${encodeURIComponent(country)}`}
                     className={`aspect-square rounded-xl overflow-hidden shadow-lg cursor-pointer transform transition hover:scale-105
                       ${selectedCountry === country ? "ring-4 ring-emerald-300" : ""}
                     `}
                     onClick={() => onCountryClick(country)}
                   >
-                    <div className={`w-full h-full p-4 flex flex-col justify-between ${selectedCountry === country ? "bg-gradient-to-br from-green-600 to-emerald-700 text-white" : "bg-white"}`}>
+                    <div  className={`w-full h-full p-4 flex flex-col justify-between ${selectedCountry === country ? "bg-gradient-to-br from-green-600 to-emerald-700 text-white" : "bg-white"}`}>
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-lg flex items-center justify-center text-xl bg-white/10">
                           <div className="text-xl">{getFlag(country)}</div>
@@ -645,7 +644,7 @@ export default function AdminHome() {
                         <div className={`text-sm font-semibold ${selectedCountry === country ? "text-white" : "text-slate-700"}`}>{list.length}</div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
@@ -704,7 +703,7 @@ export default function AdminHome() {
           </div>
         </div>
       )}
-   
+
       <Footer/>
     </div>
   );
