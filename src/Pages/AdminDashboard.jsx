@@ -75,6 +75,7 @@ export default function AdminDashboard() {
   const [itemsPerPage] = useState(10);
   const [error, setError] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
+ const [timeFilter, setTimeFilter] = useState("all");
 
   // Check if user is admin
   if (!isAdmin) {
@@ -109,8 +110,7 @@ export default function AdminDashboard() {
         setError(null);
         
         // Calculate statistics
-        calculateStats(bookings);
-        
+     
         // Process employee data
         processEmployeeData(bookings);
       } catch (err) {
@@ -126,21 +126,29 @@ export default function AdminDashboard() {
 
     return () => unsubscribe();
   }, []);
+  useEffect(() => {
+  calculateStats(allBookings);
+}, [allBookings, timeFilter]);
+
 
   // Calculate statistics
-  const calculateStats = (bookings) => {
-    const stats = {
-      total: bookings.length,
-      approved: bookings.filter(b => b.visaStatus === "Approved").length,
-      processing: bookings.filter(b => b.visaStatus === "Processing").length,
-      rejected: bookings.filter(b => b.visaStatus === "Rejected").length,
-      paid: bookings.filter(b => b.paymentStatus === "Paid").length,
-      unpaid: bookings.filter(b => b.paymentStatus === "Unpaid").length,
-      totalRevenue: bookings.reduce((sum, b) => sum + (Number(b.receivedFee) || 0), 0),
-      pendingRevenue: bookings.reduce((sum, b) => sum + (Number(b.remainingFee) || 0), 0)
-    };
-    setStats(stats);
+ const calculateStats = (bookings) => {
+  const filtered = bookings.filter(b => isWithinTimeRange(b.date, timeFilter));
+
+  const stats = {
+    total: filtered.length,
+    approved: filtered.filter(b => b.visaStatus === "Approved").length,
+    processing: filtered.filter(b => b.visaStatus === "Processing").length,
+    rejected: filtered.filter(b => b.visaStatus === "Rejected").length,
+    paid: filtered.filter(b => b.paymentStatus === "Paid").length,
+    unpaid: filtered.filter(b => b.paymentStatus === "Unpaid").length,
+    totalRevenue: filtered.reduce((sum, b) => sum + (Number(b.receivedFee) || 0), 0),
+    pendingRevenue: filtered.reduce((sum, b) => sum + (Number(b.remainingFee) || 0), 0)
   };
+
+  setStats(stats);
+};
+
 
   // Process bookings into employee data
   const processEmployeeData = (bookings) => {
@@ -201,6 +209,38 @@ export default function AdminDashboard() {
     
     setEmployees(employeesArray);
   };
+const isWithinTimeRange = (bookingDate, filter) => {
+  if (!bookingDate) return false;
+  const date = new Date(bookingDate);
+  const now = new Date();
+
+  switch (filter) {
+    case "today":
+      return date.toDateString() === now.toDateString();
+
+    case "yesterday":
+      const yesterday = new Date();
+      yesterday.setDate(now.getDate() - 1);
+      return date.toDateString() === yesterday.toDateString();
+
+    case "week":
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday start
+      return date >= startOfWeek && date <= now;
+
+    case "month":
+      return (
+        date.getMonth() === now.getMonth() &&
+        date.getFullYear() === now.getFullYear()
+      );
+
+    case "year":
+      return date.getFullYear() === now.getFullYear();
+
+    default:
+      return true; // "all"
+  }
+};
 
   // Apply filters and search
   useEffect(() => {
@@ -468,7 +508,7 @@ export default function AdminDashboard() {
               <div className="text-sm text-gray-600">
                 Logged in as: <span className="font-semibold text-purple-600">{user?.email}</span>
               </div>
-            
+             
             </div>
           </div>
         </div>
@@ -504,7 +544,7 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                <p className="text-sm font-medium text-gray-600">Total Revenue Paid</p>
                 <p className="text-2xl font-bold text-green-600">{stats.totalRevenue.toFixed(2)}</p>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -525,6 +565,22 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+        {/* Time Filter aligned right */}
+<div className="flex justify-end mb-6">
+  <select
+    value={timeFilter}
+    onChange={(e) => setTimeFilter(e.target.value)}
+    className="border rounded-lg px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+  >
+    <option value="all">All Time</option>
+    <option value="today">Today</option>
+    <option value="yesterday">Yesterday</option>
+    <option value="week">This Week</option>
+    <option value="month">This Month</option>
+    <option value="year">This Year</option>
+  </select>
+</div>
+
 
         {/* Quick Stats Summary */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 mb-6">
@@ -605,7 +661,7 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <div className="text-gray-500 text-xs">Revenue</div>
-                      <div className="font-semibold text-gray-900">${employee.totalRevenue.toLocaleString()}</div>
+                      <div className="font-semibold text-gray-900">{employee.totalRevenue.toLocaleString()}</div>
                     </div>
                     <div>
                       <div className="text-gray-500 text-xs">Countries</div>
