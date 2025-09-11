@@ -432,6 +432,7 @@ export default function ApprovedVisas() {
                     name="totalFee"
                     value={editData.totalFee || ""}
                     onChange={(e) => setEditData({ ...editData, totalFee: e.target.value })}
+                    disabled
                     className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
