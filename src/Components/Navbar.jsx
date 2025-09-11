@@ -40,8 +40,8 @@ export default function Navbar({ userName }) {
             <Link to="/approved-visas" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
               Approved Visas
             </Link>
-            <Link to="/deleted-visas" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-              Deleted Visas
+            <Link to="/tickiting" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+              Ticketing
             </Link>
             <Link to="/countries" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
               Countries
