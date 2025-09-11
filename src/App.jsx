@@ -21,6 +21,7 @@ import AdminHome from "./Pages/AdminHome";
 import UmmrahBokkingDet from "./Pages/UmmrahBokkingDet";
 import EmployeeRecord from "./Pages/EmployeeRecord";
 import CountriesWiseDet from "./Pages/CountriesWiseDet";
+import ViewallUmmarhBookings from "./Pages/ViewallUmmarhBookings";
 
 // 🔒 Protected Route
 const ProtectedRoute = ({ children }) => {
@@ -178,6 +179,14 @@ function UserRoutes({ user }) {
         element ={
           <ProtectedRoute>
             <UmmrahBookings/>
+          </ProtectedRoute>
+        }
+        />
+        <Route
+        path="viewAllUmmrahBookings"
+        element ={
+          <ProtectedRoute>
+            <ViewallUmmarhBookings/>
           </ProtectedRoute>
         }
         />
