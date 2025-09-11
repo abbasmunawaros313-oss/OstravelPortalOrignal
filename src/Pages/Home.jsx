@@ -20,42 +20,42 @@ const quickLinks = [
     description: "View and manage your visa bookings easily.",
     to: "/bookings",
     color: "from-blue-600 to-indigo-500",
-    icon: <MdFlightTakeoff />,
+    icon: <MdFlightTakeoff className="text-blue-500" />,
   },
   {
     title: "Approved Visas",
     description: "Track your approved applications hassle-free.",
     to: "/approved-visas",
     color: "from-green-600 to-emerald-500",
-    icon: <MdCheckCircle />,
+    icon: <MdCheckCircle className="text-green-500" />,
   },
   {
     title: "Deleted Visas",
     description: "Recover or permanently delete visa records.",
     to: "/deleted-visas",
     color: "from-red-600 to-orange-500",
-    icon: <MdDeleteForever />,
+    icon: <MdDeleteForever className="text-red-500" />,
   },
   {
     title: "Countries",
     description: "Browse and manage supported destinations.",
     to: "/countries",
     color: "from-yellow-500 to-amber-400",
-    icon: <MdPublic />,
+    icon: <MdPublic className="text-yellow-500" />,
   },
   {
     title: "Search",
     description: "Find bookings by passport or traveler name.",
     to: "/search",
     color: "from-purple-600 to-fuchsia-500",
-    icon: <MdSearch />,
+    icon: <MdSearch className="text-purple-500" />,
   },
   {
     title: "Reports",
     description: "Download insightful visa & travel reports.",
     to: "/reports",
     color: "from-pink-600 to-rose-500",
-    icon: <MdBarChart />,
+    icon: <MdBarChart className="text-pink-500" />,
   },
 ];
 
@@ -64,28 +64,28 @@ const services = [
     title: "Flight Ticketing",
     description: "Book flights to destinations worldwide at the best rates.",
     to: "/tickiting",
-    icon: <MdAttachMoney />,
+    icon: <MdFlightTakeoff className="text-blue-500" />,
     color: "from-sky-500 to-blue-500",
   },
   {
     title: "UMRAH BOOKINGS",
     description: "Plan your spiritual journey with our dedicated Umrah packages.",
     to: "/umrahbookings",
-    icon: <FaKaaba />,
+    icon: <FaKaaba className="text-green-500" />,
     color: "from-green-500 to-emerald-400",
   },
   {
     title: "Hotel Booking",
     description: "Find and reserve top-rated hotels and accommodations.",
-    to: "#",
-    icon: <MdHotel />,
+    to: "/hotelbookings",
+    icon: <MdHotel className="text-purple-500" />,
     color: "from-purple-500 to-indigo-500",
   },
   {
     title: "Travel Recommendations",
     description: "Get personalized tips for your trips and destinations.",
     to: "#",
-    icon: <MdMap />,
+    icon: <MdMap className="text-pink-500" />,
     color: "from-pink-500 to-rose-500",
   },
 ];
@@ -104,19 +104,19 @@ export default function Home() {
         <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-12">
           Quick Access
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+        <div className= " grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {quickLinks.map((link) => (
             <Link
               to={link.to}
               key={link.title}
-              className={`group relative p-8 rounded-2xl shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-2
-                bg-white/5 border border-white/10 text-white overflow-hidden
+              className={` group relative p-8 rounded-2xl shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-2
+                bg-white/5 border border-green-400 text-white overflow-hidden
                 before:absolute before:inset-0 before:opacity-0 before:bg-gradient-to-br before:${link.color}
                 before:transition-opacity before:duration-500
-                hover:before:opacity-100`}
+                hover:before:opacity-100 border `}
             >
-              <div className="relative z-10">
-                <div className={`text-5xl mb-4 group-hover:text-white transition-colors duration-300`}>
+              <div className="relative z-10 ">
+                <div className={` text-5xl mb-4 group-hover:text-white transition-colors duration-300`}>
                   {link.icon}
                 </div>
                 <h3 className="text-2xl font-semibold mb-2 group-hover:text-white transition-colors duration-300">{link.title}</h3>
@@ -141,7 +141,7 @@ export default function Home() {
               to={service.to}
               key={service.title}
               className={`group relative p-8 rounded-2xl shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-2
-                bg-white/5 border border-white/10 text-white overflow-hidden
+                bg-white/5 border border-pink-500 text-white overflow-hidden
                 before:absolute before:inset-0 before:opacity-0 before:bg-gradient-to-br before:${service.color}
                 before:transition-opacity before:duration-500
                 hover:before:opacity-100`}
@@ -168,17 +168,17 @@ export default function Home() {
             Why Choose <span className="text-blue-400">OS Travels?</span>
           </h2>
           <div className="grid md:grid-cols-3 gap-8 text-gray-300">
-            <div className="p-8 bg-white/5 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-transform border border-white/10">
+            <div className="p-8 bg-white/5 border border-red-400 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-transform ">
               <span className="text-5xl">🌍</span>
               <h3 className="font-semibold text-xl text-white mt-4 mb-2">Global Reach</h3>
               <p>We cover 50+ countries to make your travel truly international.</p>
             </div>
-            <div className="p-8 bg-white/5 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-transform border border-white/10">
+            <div className="p-8 bg-white/5 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-transform border border-red-400">
               <span className="text-5xl">⚡</span>
               <h3 className="font-semibold text-xl text-white mt-4 mb-2">Fast Processing</h3>
               <p>Quick approvals and streamlined processes for stress-free journeys.</p>
             </div>
-            <div className="p-8 bg-white/5 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-transform border border-white/10">
+            <div className="p-8 bg-white/5 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-transform border border-red-400">
               <span className="text-5xl">🤝</span>
               <h3 className="font-semibold text-xl text-white mt-4 mb-2">Trusted Service</h3>
               <p>Thousands of happy clients rely on us for smooth travel experiences.</p>
