@@ -24,6 +24,7 @@ import CountriesWiseDet from "./Pages/CountriesWiseDet";
 import ViewallUmmarhBookings from "./Pages/ViewallUmmarhBookings";
 import HotelBookings from "./Pages/HotelBookings";
 import ViewAllHotelBookings from "./Pages/ViewAllhotelbookings";
+import HoetlDetAdminSide from "./Pages/HoetlDetAdminSide";
 
 // 🔒 Protected Route
 const ProtectedRoute = ({ children }) => {
@@ -77,6 +78,15 @@ function AdminRoutes() {
              <CountriesWiseDet />
            </ProtectedRoute>
          }
+      />
+      <Route
+        path="/adminHotelDet"
+        element={
+          <ProtectedRoute>
+            <HoetlDetAdminSide/>
+          </ProtectedRoute>
+        }
+      
       />
       {/* ✅ fallback for admin */}
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
