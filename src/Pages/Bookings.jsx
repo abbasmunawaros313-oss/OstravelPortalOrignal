@@ -227,7 +227,7 @@ export default function Bookings() {
           <div className="flex items-center justify-center gap-4 mb-12 text-center">
             <MdFlightTakeoff className="text-blue-400 text-5xl drop-shadow-lg animate-pulse-slow" />
             <h1 className="text-4xl font-extrabold text-white tracking-wider drop-shadow-md">
-              Flight Operations
+             Bookings 
             </h1>
           </div>
 
