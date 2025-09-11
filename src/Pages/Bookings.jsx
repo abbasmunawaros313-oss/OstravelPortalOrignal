@@ -5,6 +5,9 @@ import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
 import { Timestamp } from "firebase/firestore";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
+import { FaPassport, FaUser, FaGlobeEurope, FaDollarSign, FaCreditCard, FaCalendarAlt, FaAt, FaPhone, FaLink, FaCommentDots, FaStore } from "react-icons/fa";
+import { RiVisaLine, RiPlaneLine, RiHandCoinLine } from "react-icons/ri";
+import { BiChevronDown, BiCheckCircle } from "react-icons/bi";
 
 export default function Bookings() {
   const { user } = useAuth();
@@ -31,7 +34,7 @@ export default function Bookings() {
     remarks: "",
     vendor: "",
     vendorContact: "",
-    vendorFee: "", // ✅ new field
+    vendorFee: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -46,14 +49,14 @@ export default function Bookings() {
       newErrors.fullName = "Name must contain only letters.";
     if (!form.visaType) newErrors.visaType = "Visa type is required.";
     if (!form.totalFee || isNaN(form.totalFee))
-      newErrors.totalFee = "Enter valid fee.";
+      newErrors.totalFee = "Enter valid total fee.";
     if (form.receivedFee === "" || isNaN(form.receivedFee)) {
-  newErrors.receivedFee = "Enter valid received fee.";
-} else if (Number(form.receivedFee) < 0) {
-  newErrors.receivedFee = "Received fee cannot be negative.";
-} else if (Number(form.receivedFee) > Number(form.totalFee)) {
-  newErrors.receivedFee = "Cannot exceed total fee.";
-}
+      newErrors.receivedFee = "Enter valid received fee.";
+    } else if (Number(form.receivedFee) < 0) {
+      newErrors.receivedFee = "Received fee cannot be negative.";
+    } else if (Number(form.receivedFee) > Number(form.totalFee)) {
+      newErrors.receivedFee = "Cannot exceed total fee.";
+    }
 
     if (!form.paymentStatus) newErrors.paymentStatus = "Select payment status.";
     if (!form.country) newErrors.country = "Country required.";
@@ -124,6 +127,11 @@ export default function Bookings() {
 
       const bookingData = {
         ...form,
+        totalFee: Number(form.totalFee),
+        receivedFee: Number(form.receivedFee),
+        remainingFee: Number(form.remainingFee),
+        embassyFee: Number(form.embassyFee),
+        vendorFee: form.visaType === "Appointment" ? Number(form.vendorFee) : "",
         userId: user.uid,
         userEmail: user.email,
         createdAt: Timestamp.now(),
@@ -164,195 +172,365 @@ export default function Bookings() {
     }
   };
 
+  const formFields = [
+    { label: "Passport No", name: "passport", type: "text", placeholder: "AB1234567", icon: FaPassport },
+    { label: "Expiry Date", name: "expiryDate", type: "date", icon: FaCalendarAlt },
+    { label: "Full Name", name: "fullName", type: "text", placeholder: "John Doe", icon: FaUser },
+    {
+      label: "Visa Type",
+      name: "visaType",
+      type: "select",
+      options: ["Business", "Tourism", "Family Visit", "National Visa", "Appointment"],
+      icon: RiVisaLine
+    },
+    { label: "Application Date", name: "date", type: "date", readonly: true, icon: FaCalendarAlt },
+    { label: "Country", name: "country", type: "text", placeholder: "e.g. UAE", icon: FaGlobeEurope },
+    {
+      label: "Visa Status",
+      name: "visaStatus",
+      type: "select",
+      options: ["Approved", "Rejected", "Processing"],
+      icon: BiCheckCircle
+    },
+    { label: "Total Fee", name: "totalFee", type: "number", placeholder: "0", icon: FaDollarSign },
+    { label: "Received Fee", name: "receivedFee", type: "number", placeholder: "0", icon: RiHandCoinLine },
+    { label: "Remaining Fee", name: "remainingFee", type: "number", readonly: true, icon: FaCreditCard },
+    {
+      label: "Payment Status",
+      name: "paymentStatus",
+      type: "select",
+      options: ["Paid", "Unpaid", "Partially Paid"],
+      icon: FaCreditCard
+    },
+    { label: "Embassy Fee", name: "embassyFee", type: "number", placeholder: "0", icon: FaDollarSign },
+    { label: "Email", name: "email", type: "email", placeholder: "john.doe@example.com", icon: FaAt },
+    { label: "Phone", name: "phone", type: "text", placeholder: "03XXXXXXXXX", icon: FaPhone },
+    { label: "Reference", name: "reference", type: "text", placeholder: "Wajahat Ali", icon: FaLink },
+  ];
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 via-white to-green-100 p-8">
-      <div className="bg-white shadow-2xl rounded-2xl p-10 w-full max-w-5xl border border-gray-200">
-        {/* Header */}
-        <div className="flex items-center justify-center gap-3 mb-10">
-          <MdFlightTakeoff className="text-blue-600 text-4xl" />
-          <h1 className="text-3xl font-extrabold text-gray-700">Bookings</h1>
-        </div>
-
-        {/* User Info */}
-        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200 shadow-sm">
-          <p className="text-blue-900 text-sm">
-            <strong>Logged in as:</strong> {user?.email}
-          </p>
-          <p className="text-blue-600 text-xs mt-1">
-            You can only see and manage your own bookings.
-          </p>
-        </div>
-
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 md:grid-cols-2 gap-6"
-        >
-          {/* Common Fields */}
-          {[
-            { label: "Passport No", name: "passport", type: "text", placeholder: "AB1234567" },
-            { label: "Expiry Date", name: "expiryDate", type: "date" },
-            { label: "Full Name", name: "fullName", type: "text", placeholder: "John Doe" },
-            {
-              label: "Visa Type",
-              name: "visaType",
-              type: "select",
-              options: ["Business", "Tourism", "Family Visit", "National Visa", "Appointment"],
-            },
-            { label: "Application Date", name: "date", type: "date", readonly: true },
-            { label: "Country", name: "country", type: "text", placeholder: "e.g. UAE" },
-            {
-              label: "Visa Status",
-              name: "visaStatus",
-              type: "select",
-              options: ["Approved", "Rejected", "Processing"],
-            },
-            { label: "Total Fee", name: "totalFee", type: "number", placeholder: "0" },
-            { label: "Received Fee", name: "receivedFee", type: "number", placeholder: "0" },
-            { label: "Remaining Fee", name: "remainingFee", type: "number", readonly: true },
-            {
-              label: "Payment Status",
-              name: "paymentStatus",
-              type: "select",
-              options: ["Paid", "Unpaid", "Partially Paid"],
-            },
-            { label: "Reference", name: "embassyFee", type: "text", placeholder: "Wajahat Ali" },
-            { label: "Email", name: "email", type: "email", placeholder: "john.doe@example.com" },
-            { label: "Phone", name: "phone", type: "text", placeholder: "03XXXXXXXXX" },
-          ].map((field, i) => (
-            <div key={i} className="col-span-1">
-              <label className="block text-sm font-semibold text-gray-600 mb-1">
-                {field.label}
-              </label>
-              {field.type === "select" ? (
-                <select
-                  name={field.name}
-                  value={form[field.name]}
-                  onChange={handleChange}
-                  className="w-full rounded-xl px-4 py-2.5 border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-400 outline-none transition bg-white"
-                >
-                  <option value="">Select {field.label}</option>
-                  {field.options.map((opt, idx) => (
-                    <option key={idx} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type={field.type}
-                  name={field.name}
-                  value={form[field.name]}
-                  onChange={handleChange}
-                  readOnly={field.readonly}
-                  placeholder={field.placeholder}
-                  className={`w-full rounded-xl px-4 py-2.5 border border-gray-300 shadow-sm focus:ring-2 focus:ring-green-400 outline-none transition ${
-                    field.readonly ? "bg-gray-100" : "bg-white"
-                  }`}
-                />
-              )}
-              {errors[field.name] && (
-                <p className="text-red-500 text-xs mt-1">{errors[field.name]}</p>
-              )}
-            </div>
-          ))}
-
-          {/* Conditional Fields */}
-          {form.visaType === "Appointment" ? (
-            <>
-              <div className="col-span-1">
-                <label className="block text-sm font-semibold text-gray-600 mb-1">Vendor</label>
-                <input
-                  type="text"
-                  name="vendor"
-                  value={form.vendor}
-                  onChange={handleChange}
-                  placeholder="Vendor Name"
-                  className="w-full rounded-xl px-4 py-2.5 border border-gray-300 shadow-sm focus:ring-2 focus:ring-green-400 outline-none transition bg-white"
-                />
-                {errors.vendor && <p className="text-red-500 text-xs mt-1">{errors.vendor}</p>}
-              </div>
-              <div className="col-span-1">
-                <label className="block text-sm font-semibold text-gray-600 mb-1">Vendor Contact</label>
-                <input
-                  type="text"
-                  name="vendorContact"
-                  value={form.vendorContact}
-                  onChange={handleChange}
-                  placeholder="Vendor Contact Number"
-                  className="w-full rounded-xl px-4 py-2.5 border border-gray-300 shadow-sm focus:ring-2 focus:ring-green-400 outline-none transition bg-white"
-                />
-                {errors.vendorContact && <p className="text-red-500 text-xs mt-1">{errors.vendorContact}</p>}
-              </div>
-              <div className="col-span-1">
-                <label className="block text-sm font-semibold text-gray-600 mb-1">Vendor Fee</label>
-                <input
-                  type="number"
-                  name="vendorFee"
-                  value={form.vendorFee}
-                  onChange={handleChange}
-                  placeholder="Enter Vendor Fee"
-                  className="w-full rounded-xl px-4 py-2.5 border border-gray-300 shadow-sm focus:ring-2 focus:ring-green-400 outline-none transition bg-white"
-                />
-                {errors.vendorFee && <p className="text-red-500 text-xs mt-1">{errors.vendorFee}</p>}
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="col-span-1">
-                <label className="block text-sm font-semibold text-gray-600 mb-1">Sent To Embassy</label>
-                <input
-                  type="text"
-                  name="sentToEmbassy"
-                  value={form.sentToEmbassy}
-                  onChange={handleChange}
-                  placeholder="20/sep/2025"
-                  className="w-full rounded-xl px-4 py-2.5 border border-gray-300 shadow-sm focus:ring-2 focus:ring-green-400 outline-none transition bg-white"
-                />
-              </div>
-              <div className="col-span-1">
-                <label className="block text-sm font-semibold text-gray-600 mb-1">Received From Embassy</label>
-                <input
-                  type="text"
-                  name="receivedFromEmbassy"
-                  value={form.receivedFromEmbassy}
-                  onChange={handleChange}
-                  placeholder="25/sep/2025"
-                  className="w-full rounded-xl px-4 py-2.5 border border-gray-300 shadow-sm focus:ring-2 focus:ring-green-400 outline-none transition bg-white"
-                />
-              </div>
-            </>
-          )}
-
-          {/* Remarks */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-semibold text-gray-600 mb-1">Remarks</label>
-            <textarea
-              name="remarks"
-              value={form.remarks}
-              onChange={handleChange}
-              placeholder="Additional notes..."
-              className="w-full rounded-xl px-4 py-3 border border-gray-300 shadow-sm focus:ring-2 focus:ring-green-400 outline-none transition bg-white"
-              rows="3"
-            />
-            {errors.remarks && <p className="text-red-500 text-xs mt-1">{errors.remarks}</p>}
-          </div>
-
-          {/* Save Button */}
-          <div className="md:col-span-2 pt-6">
-            <button
-              type="submit"
-              disabled={isSubmitting || !user}
-              className={`w-full py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-[1.02] transition ${
-                isSubmitting || !user
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-gradient-to-r from-blue-500 to-green-500 text-white"
-              }`}
-            >
-              {!user ? "Please Login" : isSubmitting ? "⏳ Saving..." : "💾 Save Booking"}
-            </button>
-          </div>
-        </form>
+    <div className="relative min-h-screen bg-black overflow-hidden font-sans text-gray-100 flex items-center justify-center p-8">
+      {/* Dynamic Animated Background */}
+      <div className="absolute inset-0 z-0 bg-travel-grid">
+        <div className="absolute inset-0 bg-black/90"></div>
+        <div className="absolute inset-0 z-10 animate-pulse-light"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-900/10 via-transparent to-green-900/10 animate-fade-in"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] border-2 border-dashed border-blue-500/30 rounded-full animate-rotate-slow"></div>
+        <div className="absolute top-1/4 left-1/4 w-40 h-40 bg-blue-500/20 blur-3xl animate-blob-pulse-1"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-40 h-40 bg-green-500/20 blur-3xl animate-blob-pulse-2"></div>
       </div>
+
+      {/* Main Content */}
+      <div className="relative z-20 w-full max-w-6xl animate-fade-in-up">
+        <div className="bg-white/5 backdrop-blur-xl border border-gray-700 shadow-2xl rounded-3xl p-10 transform transition-all duration-500 hover:scale-[1.005] hover:shadow-3xl">
+          {/* Header */}
+          <div className="flex items-center justify-center gap-4 mb-12 text-center">
+            <MdFlightTakeoff className="text-blue-400 text-5xl drop-shadow-lg animate-pulse-slow" />
+            <h1 className="text-4xl font-extrabold text-white tracking-wider drop-shadow-md">
+              Flight Operations
+            </h1>
+          </div>
+
+          {/* User Info */}
+          <div className="mb-8 p-5 bg-blue-900/40 rounded-2xl border border-blue-800 shadow-inner flex items-center gap-4 animate-fade-in-up">
+            <FaUser className="text-blue-400 text-2xl" />
+            <div>
+              <p className="text-blue-200 text-sm font-semibold">
+                Logged in as: <span className="font-normal">{user?.email}</span>
+              </p>
+              <p className="text-blue-300 text-xs mt-1 italic">
+                Securely manage your bookings.
+              </p>
+            </div>
+          </div>
+
+          <form
+            onSubmit={handleSubmit}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          >
+            {/* Common Fields */}
+            {formFields.map((field, i) => (
+              <div key={i} className="col-span-1 group relative animate-slide-in-left-delay">
+                <label className="block text-sm font-semibold text-gray-300 mb-2 transition-colors duration-300 group-focus-within:text-blue-400">
+                  {field.label}
+                </label>
+                <div className="relative">
+                  {field.type === "select" ? (
+                    <div className="relative">
+                      <field.icon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+                      <select
+                        name={field.name}
+                        value={form[field.name]}
+                        onChange={handleChange}
+                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 shadow-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all duration-300 bg-gray-800/60 text-white cursor-pointer appearance-none"
+                      >
+                        <option value="" className="bg-gray-900">Select {field.label}</option>
+                        {field.options.map((opt, idx) => (
+                          <option key={idx} value={opt} className="bg-gray-900">
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                      <BiChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                    </div>
+                  ) : (
+                    <>
+                      <field.icon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+                      <input
+                        type={field.type}
+                        name={field.name}
+                        value={form[field.name]}
+                        onChange={handleChange}
+                        readOnly={field.readonly}
+                        placeholder={field.placeholder}
+                        className={`w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 shadow-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all duration-300 ${
+                          field.readonly ? "bg-gray-800/80 text-gray-400 cursor-not-allowed" : "bg-gray-800/60 text-white placeholder-gray-500"
+                        }`}
+                      />
+                    </>
+                  )}
+                  {errors[field.name] && (
+                    <p className="text-red-400 text-xs mt-2 ml-1 drop-shadow-sm animate-pulse-once">
+                      {errors[field.name]}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {/* Conditional Fields */}
+            {form.visaType === "Appointment" ? (
+              <>
+                <div className="col-span-1 group relative animate-slide-in-right-delay">
+                  <label className="block text-sm font-semibold text-gray-300 mb-2 transition-colors duration-300 group-focus-within:text-blue-400">
+                    Vendor Name
+                  </label>
+                  <div className="relative">
+                    <FaStore className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+                    <input
+                      type="text"
+                      name="vendor"
+                      value={form.vendor}
+                      onChange={handleChange}
+                      placeholder="Vendor Name"
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 shadow-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all duration-300 bg-gray-800/60 text-white placeholder-gray-500"
+                    />
+                  </div>
+                  {errors.vendor && <p className="text-red-400 text-xs mt-2 ml-1">{errors.vendor}</p>}
+                </div>
+                <div className="col-span-1 group relative animate-slide-in-right-delay">
+                  <label className="block text-sm font-semibold text-gray-300 mb-2 transition-colors duration-300 group-focus-within:text-blue-400">
+                    Vendor Contact
+                  </label>
+                  <div className="relative">
+                    <FaPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+                    <input
+                      type="text"
+                      name="vendorContact"
+                      value={form.vendorContact}
+                      onChange={handleChange}
+                      placeholder="Vendor Contact Number"
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 shadow-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all duration-300 bg-gray-800/60 text-white placeholder-gray-500"
+                    />
+                  </div>
+                  {errors.vendorContact && <p className="text-red-400 text-xs mt-2 ml-1">{errors.vendorContact}</p>}
+                </div>
+                <div className="col-span-1 group relative animate-slide-in-right-delay">
+                  <label className="block text-sm font-semibold text-gray-300 mb-2 transition-colors duration-300 group-focus-within:text-blue-400">
+                    Vendor Fee
+                  </label>
+                  <div className="relative">
+                    <FaDollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+                    <input
+                      type="number"
+                      name="vendorFee"
+                      value={form.vendorFee}
+                      onChange={handleChange}
+                      placeholder="Enter Vendor Fee"
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 shadow-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all duration-300 bg-gray-800/60 text-white placeholder-gray-500"
+                    />
+                  </div>
+                  {errors.vendorFee && <p className="text-red-400 text-xs mt-2 ml-1">{errors.vendorFee}</p>}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="col-span-1 group relative animate-slide-in-right-delay">
+                  <label className="block text-sm font-semibold text-gray-300 mb-2 transition-colors duration-300 group-focus-within:text-blue-400">
+                    Sent To Embassy
+                  </label>
+                  <div className="relative">
+                    <RiPlaneLine className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+                    <input
+                      type="text"
+                      name="sentToEmbassy"
+                      value={form.sentToEmbassy}
+                      onChange={handleChange}
+                      placeholder="e.g., 20/sep/2025"
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 shadow-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all duration-300 bg-gray-800/60 text-white placeholder-gray-500"
+                    />
+                  </div>
+                </div>
+                <div className="col-span-1 group relative animate-slide-in-right-delay">
+                  <label className="block text-sm font-semibold text-gray-300 mb-2 transition-colors duration-300 group-focus-within:text-blue-400">
+                    Received From Embassy
+                  </label>
+                  <div className="relative">
+                    <RiPlaneLine className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+                    <input
+                      type="text"
+                      name="receivedFromEmbassy"
+                      value={form.receivedFromEmbassy}
+                      onChange={handleChange}
+                      placeholder="e.g., 25/sep/2025"
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 shadow-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all duration-300 bg-gray-800/60 text-white placeholder-gray-500"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Remarks */}
+            <div className="md:col-span-2 lg:col-span-3 group animate-slide-in-up-delay">
+              <label className="block text-sm font-semibold text-gray-300 mb-2 transition-colors duration-300 group-focus-within:text-blue-400">
+                Remarks
+              </label>
+              <div className="relative">
+                <FaCommentDots className="absolute left-4 top-4 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+                <textarea
+                  name="remarks"
+                  value={form.remarks}
+                  onChange={handleChange}
+                  placeholder="Additional notes..."
+                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 shadow-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all duration-300 bg-gray-800/60 text-white placeholder-gray-500"
+                  rows="3"
+                />
+              </div>
+              {errors.remarks && <p className="text-red-400 text-xs mt-2 ml-1">{errors.remarks}</p>}
+            </div>
+
+            {/* Save Button */}
+            <div className="md:col-span-2 lg:col-span-3 pt-6 animate-fade-in-up-delay">
+              <button
+                type="submit"
+                disabled={isSubmitting || !user}
+                className={`w-full py-4 rounded-full font-bold text-lg shadow-xl transform transition-all duration-300 ease-in-out hover:scale-[1.01] hover:shadow-2xl flex items-center justify-center gap-3 ${
+                  isSubmitting || !user
+                    ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                    : "bg-gradient-to-r from-blue-600 to-teal-500 text-white hover:from-blue-700 hover:to-teal-600"
+                }`}
+              >
+                {!user ? (
+                  "Please Login to Continue"
+                ) : isSubmitting ? (
+                  <>
+                    <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <MdFlightTakeoff className="text-xl" />
+                    <span>Save Booking</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+      
+      {/* Tailwind CSS keyframes for animation */}
+      <style>{`
+        .bg-travel-grid {
+          background-image:
+            radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.8) 100%),
+            linear-gradient(to right, transparent 50%, rgba(0,100,255,0.05) 50%),
+            linear-gradient(to bottom, transparent 50%, rgba(0,100,255,0.05) 50%);
+          background-size: 50px 50px, 50px 50px;
+          animation: grid-pan 60s linear infinite;
+        }
+
+        @keyframes grid-pan {
+          from {
+            background-position: 0 0, 0 0;
+          }
+          to {
+            background-position: 50px 50px, 50px 50px;
+          }
+        }
+
+        .animate-pulse-light {
+          animation: pulse-light 10s ease-in-out infinite;
+        }
+
+        @keyframes pulse-light {
+          0%, 100% {
+            box-shadow: 0 0 15px rgba(0,255,255,0.2), 0 0 30px rgba(0,255,255,0.1), 0 0 45px rgba(0,255,255,0.05);
+          }
+          50% {
+            box-shadow: 0 0 25px rgba(0,255,255,0.4), 0 0 50px rgba(0,255,255,0.3), 0 0 75px rgba(0,255,255,0.1);
+          }
+        }
+
+        .animate-rotate-slow {
+          animation: rotate-slow 120s linear infinite;
+        }
+        @keyframes rotate-slow {
+          from { transform: translate(-50%, -50%) rotate(0deg); }
+          to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .animate-blob-pulse-1 {
+          animation: blob-pulse 20s ease-in-out infinite;
+        }
+        .animate-blob-pulse-2 {
+          animation: blob-pulse 18s ease-in-out infinite reverse;
+        }
+        @keyframes blob-pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.2); }
+        }
+
+        .animate-fade-in-up {
+          animation: fade-in-up 0.8s ease-out forwards;
+        }
+        @keyframes fade-in-up {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-slide-in-left-delay {
+            animation: slide-in-left 0.8s ease-out forwards;
+        }
+        @keyframes slide-in-left {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .animate-slide-in-right-delay {
+            animation: slide-in-right 0.8s ease-out forwards;
+        }
+        @keyframes slide-in-right {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .animate-slide-in-up-delay {
+            animation: slide-in-up 0.8s ease-out forwards;
+        }
+        @keyframes slide-in-up {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-pulse-slow {
+            animation: pulse-slow 3s infinite;
+        }
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+      `}</style>
     </div>
   );
 }
