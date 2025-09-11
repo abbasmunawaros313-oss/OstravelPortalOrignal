@@ -22,6 +22,8 @@ import UmmrahBokkingDet from "./Pages/UmmrahBokkingDet";
 import EmployeeRecord from "./Pages/EmployeeRecord";
 import CountriesWiseDet from "./Pages/CountriesWiseDet";
 import ViewallUmmarhBookings from "./Pages/ViewallUmmarhBookings";
+import HotelBookings from "./Pages/HotelBookings";
+import ViewAllHotelBookings from "./Pages/ViewAllhotelbookings";
 
 // 🔒 Protected Route
 const ProtectedRoute = ({ children }) => {
@@ -190,7 +192,22 @@ function UserRoutes({ user }) {
           </ProtectedRoute>
         }
         />
-       
+        <Route
+            path="/hotelbookings"
+            element={
+              <ProtectedRoute>
+                <HotelBookings/>
+              </ProtectedRoute>
+            }
+       />
+       <Route
+        path="/viewallHotelbookings"
+        element={
+          <ProtectedRoute>
+            <ViewAllHotelBookings/>
+          </ProtectedRoute>
+        }
+       />
         {/* ✅ fallback for users */}
         <Route path="*" element={<Navigate to={user ? "/home" : "/login"} />} />
       </Routes>
