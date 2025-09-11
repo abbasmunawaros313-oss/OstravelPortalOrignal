@@ -8,29 +8,36 @@ import {
   onSnapshot,
   updateDoc,
   doc,
-  orderBy,
-  addDoc,
-  getDocs,
-  setDoc,
   getDoc,
-  deleteDoc,
 } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
+import { FaEdit, FaSave, FaTimes, FaSpinner, FaSearch, FaPassport, FaUser, FaGlobeAmericas, FaPlane, FaCalendarAlt, FaMoneyBillWave, FaIdCard } from "react-icons/fa";
+import Footer from "../Components/Footer";
+import { useNavigate } from "react-router-dom";
 
 export default function ApprovedVisas() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
+  const [filteredBookings, setFilteredBookings] = useState([]);
   const [filter, setFilter] = useState("All");
+  const [dateFilter, setDateFilter] = useState("All Time");
+  const [searchTerm, setSearchTerm] = useState("");
   const [editing, setEditing] = useState(null);
   const [editData, setEditData] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
-    // Only query by userId - avoid composite index requirement
+    // The query is now simplified to just fetch bookings for the current user.
+    // Sorting will be done on the client side to avoid the composite index requirement.
     const q = query(
-        collection(db, "bookings"),
+      collection(db, "bookings"),
       where("userId", "==", user.uid)
     );
 
@@ -38,80 +45,95 @@ export default function ApprovedVisas() {
       q,
       (snapshot) => {
         const raw = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+          id: doc.id,
+          ...doc.data(),
+        }));
 
-        // Sort by date in memory (descending) to avoid index requirement
+        // Client-side sorting by date in descending order
         const sortedData = raw.sort((a, b) => {
-          const dateA = new Date(a.date || 0);
-          const dateB = new Date(b.date || 0);
+          const dateA = a.date ? new Date(a.date).getTime() : 0;
+          const dateB = b.date ? new Date(b.date).getTime() : 0;
           return dateB - dateA;
         });
 
-        // Filter by status in memory to avoid composite index requirement
-        let filteredData = sortedData;
-        if (filter !== "All") {
-          filteredData = sortedData.filter(booking => booking.visaStatus === filter);
+        const unique = [];
+        const seen = new Set();
+        for (const b of sortedData) {
+          const key = `${b.passport || ""}-${b.country || ""}`;
+          if (!seen.has(key)) {
+            unique.push(b);
+            seen.add(key);
+          }
         }
-
-        // ✅ Remove duplicates by passport (keep first/latest)
-      const unique = [];
-const seen = new Set();
-for (const b of filteredData) {
-  const key = `${b.passport || ""}-${b.country || ""}`; // unique per passport+country
-  if (!seen.has(key)) {
-    unique.push(b);
-    seen.add(key);
-  }
-}
-
         setBookings(unique);
+        setLoading(false);
       },
       (error) => {
         console.error("Error fetching bookings:", error);
         toast.error("Error loading bookings: " + error.message);
+        setLoading(false);
       }
     );
 
     return () => unsubscribe();
-  }, [filter, user]);
+  }, [user]);
 
-  // ✅ FIXED: Check if document exists before updating
-  const handleUpdate = async (id, field, value) => {
-    if (!user) {
-      toast.error("You must be logged in to update records.");
-      return;
+  useEffect(() => {
+    let data = [...bookings];
+
+    // Filter by visa status
+    if (filter !== "All") {
+      data = data.filter((booking) => booking.visaStatus === filter);
     }
 
-    try {
-      setLoading(true);
-      const docRef = doc(db, "bookings", id);
-      
-      // Check if document exists and belongs to current user
-      const docSnap = await getDoc(docRef);
-      if (!docSnap.exists()) {
-        toast.error("Document not found. It may have been deleted.");
-        return;
-      }
+    // Filter by date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let startDate;
 
-      const docData = docSnap.data();
-      if (docData.userId !== user.uid) {
-        toast.error("You can only update your own records.");
-        return;
-      }
-
-      await updateDoc(docRef, { [field]: value });
-      toast.success(`${field} updated successfully`);
-    } catch (error) {
-      console.error("Update error:", error);
-      toast.error("Failed to update: " + error.message);
-    } finally {
-      setLoading(false);
+    switch (dateFilter) {
+      case "Today":
+        startDate = today;
+        break;
+      case "Yesterday":
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 1);
+        break;
+      case "Last 7 Days":
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 7);
+        break;
+      case "Last 30 Days":
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 30);
+        break;
+      case "All Time":
+      default:
+        startDate = null;
     }
-  };
 
-  // Start editing
+    if (startDate) {
+      data = data.filter(booking => {
+        if (!booking.date) return false;
+        const bookingDate = new Date(booking.date);
+        bookingDate.setHours(0, 0, 0, 0);
+        return bookingDate >= startDate;
+      });
+    }
+
+    // Filter by search term
+    if (searchTerm.trim() !== "") {
+      const lowerCaseSearchTerm = searchTerm.toLowerCase();
+      data = data.filter(
+        (b) =>
+          b.passport?.toLowerCase().includes(lowerCaseSearchTerm) ||
+          b.fullName?.toLowerCase().includes(lowerCaseSearchTerm) ||
+          b.country?.toLowerCase().includes(lowerCaseSearchTerm)
+      );
+    }
+    setFilteredBookings(data);
+  }, [filter, dateFilter, searchTerm, bookings]);
+
   const startEdit = (booking) => {
     if (!user || booking.userId !== user.uid) {
       toast.error("You can only edit your own records.");
@@ -119,57 +141,14 @@ for (const b of filteredData) {
     }
 
     setEditing(booking.id);
-    // Make sure we have all fields
     setEditData({
-      passport: booking.passport || "",
-      fullName: booking.fullName || "",
-      visaType: booking.visaType || "",
-      country: booking.country || "",
-      date: booking.date || "",
-      totalFee: booking.totalFee || "",
-      receivedFee: booking.receivedFee || "",
-      remainingFee: booking.remainingFee || "",
-      paymentStatus: booking.paymentStatus || "Unpaid",
-      reference: booking.embassyFee || "",
-      sentToEmbessy: booking.sentToEmbassy || "",
-      reciveFromEmbessy: booking.receiveFromEmbassy || "",
-      visaStatus: booking.visaStatus || "Processing",
-      
+      ...booking,
+      reference: booking.embassyFee,
+      sentToEmbessy: booking.sentToEmbassy,
+      reciveFromEmbessy: booking.receiveFromEmbassy,
     });
   };
 
-  // ✅ FIXED: Proper duplicate passport check (only within user's records)
-  // ✅ FIXED: Check duplicate by passport + country
-const checkDuplicatePassport = async (passportNumber, country, excludeId = null) => {
-  if (!user || !passportNumber || passportNumber.trim() === "") {
-    return false; // Empty passport is not a duplicate
-  }
-
-  try {
-    const q = query(
-      collection(db, "bookings"),
-      where("userId", "==", user.uid),
-      where("passport", "==", passportNumber.trim()),
-      where("country", "==", (country || "").trim()) // ✅ check country too
-    );
-    const snapshot = await getDocs(q);
-
-    // Check if any document with this passport+country exists (excluding current one)
-    const duplicates = snapshot.docs.filter(doc => doc.id !== excludeId);
-
-    if (duplicates.length > 0) {
-      console.log("Duplicate found:", passportNumber, country);
-      return true;
-    }
-
-    return false;
-  } catch (error) {
-    console.error("Error checking duplicate:", error);
-    return false;
-  }
-};
-
-  // ✅ FIXED: Save edited data with better validation
   const saveEdit = async (id) => {
     if (!user) {
       toast.error("You must be logged in to update records.");
@@ -177,517 +156,443 @@ const checkDuplicatePassport = async (passportNumber, country, excludeId = null)
     }
 
     try {
-      setLoading(true);
-
-      // Validation
-      if (!editData.passport || !editData.passport.trim()) {
-        toast.error("Passport number is required!");
-        return;
-      }
-
-      if (!editData.fullName || !editData.fullName.trim()) {
-        toast.error("Full name is required!");
-        return;
-      }
-
-      // Check if document exists and belongs to current user
+      setSaving(true);
       const docRef = doc(db, "bookings", id);
       const docSnap = await getDoc(docRef);
-      
-      if (!docSnap.exists()) {
-        toast.error("Document not found. It may have been deleted.");
-        setEditing(null);
-        setEditData({});
-        return;
-      }
 
-      const docData = docSnap.data();
-      if (docData.userId !== user.uid) {
+      if (!docSnap.exists() || docSnap.data().userId !== user.uid) {
         toast.error("You can only update your own records.");
         return;
       }
 
-      // Check for duplicate passport (excluding current document)
-      const isDuplicate = await checkDuplicatePassport(editData.passport, id);
-      if (isDuplicate) {
-        toast.error(`Passport number "${editData.passport}" already exists in your records!`);
-        return;
+      const updateData = {
+        passport: typeof editData.passport === 'string' ? editData.passport.trim() : editData.passport || "",
+        fullName: typeof editData.fullName === 'string' ? editData.fullName.trim() : editData.fullName || "",
+        visaType: typeof editData.visaType === 'string' ? editData.visaType.trim() : editData.visaType || "",
+        country: typeof editData.country === 'string' ? editData.country.trim() : editData.country || "",
+        date: editData.date || "",
+        totalFee: editData.totalFee || "",
+        receivedFee: editData.receivedFee || "",
+        remainingFee: editData.remainingFee || "",
+        paymentStatus: editData.paymentStatus || "",
+        visaStatus: editData.visaStatus || "",
+        embassyFee: typeof editData.reference === 'string' ? editData.reference.trim() : editData.reference || "",
+        sentToEmbassy: typeof editData.sentToEmbessy === 'string' ? editData.sentToEmbessy.trim() : editData.sentToEmbessy || "",
+        receiveFromEmbassy: typeof editData.reciveFromEmbessy === 'string' ? editData.reciveFromEmbessy.trim() : editData.reciveFromEmbessy || "",
+      };
+
+      if (editData.visaType === "Appointment") {
+        updateData.vendorContact = typeof editData.vendorContact === 'string' ? editData.vendorContact.trim() : editData.vendorContact || "";
+        updateData.vendorFee = editData.vendorFee || "";
+      } else {
+        delete updateData.vendorContact;
+        delete updateData.vendorFee;
       }
 
-      // Prepare update data - only include non-empty fields
-      const updateData = {};
-      if (editData.passport) updateData.passport = editData.passport.trim();
-      if (editData.fullName) updateData.fullName = editData.fullName.trim();
-      if (editData.visaType) updateData.visaType = editData.visaType.trim();
-      if (editData.country) updateData.country = editData.country.trim();
-      if (editData.date) updateData.date = editData.date;
-     // if (editData.totalFee) updateData.totalFee = editData.totalFee;
-      if (editData.receivedFee) updateData.receivedFee = editData.receivedFee;
-      if (editData.remainingFee) updateData.remainingFee = editData.remainingFee;
-      if (editData.paymentStatus) updateData.paymentStatus = editData.paymentStatus;
-      if (editData.visaStatus) updateData.visaStatus = editData.visaStatus;
-      if (editData.reference) updateData.embassyFee = (editData.reference || "").trim();
-      if (editData.sentToEmbessy) updateData.sentToEmbassy = (editData.sentToEmbessy || "").trim();
-      if (editData.reciveFromEmbessy)updateData.receiveFromEmbassy = (editData.reciveFromEmbessy || "").trim();
-
-
       await updateDoc(docRef, updateData);
-      
-    setEditing(null);
-    setEditData({});
+
+      setEditing(null);
+      setEditData({});
       toast.success("Booking updated successfully!");
     } catch (error) {
       console.error("Save error:", error);
       toast.error("Error updating booking: " + error.message);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  // ✅ FIXED: Proper delete with verification
-  const handleDelete = async (booking) => {
-    if (!user || booking.userId !== user.uid) {
-      toast.error("You can only delete your own records.");
-      return;
-    }
-
-    // Confirmation dialog
-    const confirmMessage = `Are you sure you want to delete the booking for:\n\nName: ${booking.fullName}\nPassport: ${booking.passport}`;
-    
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      // First check if document exists and belongs to current user
-      const bookingRef = doc(db, "bookings", booking.id);
-      const bookingSnap = await getDoc(bookingRef);
-      
-      if (!bookingSnap.exists()) {
-        toast.error("Document not found. It may have already been deleted.");
-        return;
-      }
-
-      const docData = bookingSnap.data();
-      if (docData.userId !== user.uid) {
-        toast.error("You can only delete your own records.");
-        return;
-      }
-
-      // Save to deletedBookings collection first
-      const deletedData = {
-        ...bookingSnap.data(),
-        originalId: booking.id,
-        deletedAt: new Date().toISOString(),
-        deletedBy: user.email,
-      };
-
-      // Use a new ID for deleted bookings or use the same ID
-      await setDoc(doc(db, "deletedBookings", booking.id), deletedData);
-      console.log("Saved to deletedBookings:", booking.id);
-
-      // Then delete from bookings
-      await deleteDoc(bookingRef);
-      console.log("Deleted from bookings:", booking.id);
-
-      toast.success(`Booking for ${booking.fullName} has been deleted successfully!`);
-    } catch (error) {
-      console.error("Delete error:", error);
-      toast.error("Error deleting booking: " + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Cancel editing
   const cancelEdit = () => {
     setEditing(null);
     setEditData({});
   };
 
-  // Debug function to check for records without userId
-  const debugCheckRecords = async () => {
-    if (!user) return;
-    
-    try {
-      console.log("🔍 Debug: Checking all records for user:", user.uid);
-      
-      // Check records with userId
-      const userQuery = query(
-        collection(db, "bookings"),
-        where("userId", "==", user.uid)
-      );
-      const userSnapshot = await getDocs(userQuery);
-      console.log("📊 Records with userId:", userSnapshot.docs.length);
-      
-      // Check records without userId (legacy data)
-      const allQuery = query(collection(db, "bookings"));
-      const allSnapshot = await getDocs(allQuery);
-      const recordsWithoutUserId = allSnapshot.docs.filter(doc => !doc.data().userId);
-      console.log("⚠️ Records without userId:", recordsWithoutUserId.length);
-      
-      if (recordsWithoutUserId.length > 0) {
-        console.log("📋 Sample records without userId:", recordsWithoutUserId.slice(0, 3).map(doc => ({ id: doc.id, ...doc.data() })));
-      }
-      
-      toast.success(`Debug: ${userSnapshot.docs.length} user records, ${recordsWithoutUserId.length} without userId`);
-    } catch (error) {
-      console.error("Debug error:", error);
-      toast.error("Debug failed");
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Approved":
+        return "bg-green-600";
+      case "Rejected":
+        return "bg-red-600";
+      case "Processing":
+        return "bg-yellow-600";
+      default:
+        return "bg-gray-600";
     }
   };
 
-  // Show message if not logged in
   if (!user) {
     return (
-      <div className="p-6 min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-700 mb-4">Access Denied</h2>
-          <p className="text-gray-600">Please log in to view your visa records.</p>
+      <div className="p-6 min-h-screen bg-gray-950 flex items-center justify-center">
+        <div className="text-center bg-gray-900 p-8 rounded-xl shadow-lg border border-gray-800">
+          <h2 className="text-2xl font-bold text-white mb-4">
+            Access Denied
+          </h2>
+          <p className="text-gray-400">Please log in to view your visa records.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">My Visa Records</h1>
-
-        <div className="flex gap-4 items-center">
-          {/* User Info */}
-          <div className="text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-lg">
-            Logged in as: <span className="font-semibold">{user.email}</span>
+    <div className="p-6 min-h-screen bg-gray-950 text-gray-200">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-white">
+            My Visa Records 🛂
+          </h1>
+          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by name, passport, country..."
+                className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 focus:ring-2 focus:ring-blue-500 placeholder-gray-400 border border-gray-700"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="bg-gray-800 text-white rounded-lg px-4 py-3 shadow-sm border border-gray-700 focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
+            >
+              <option value="All">All Status</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Processing">Processing</option>
+            </select>
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="bg-gray-800 text-white rounded-lg px-4 py-3 shadow-sm border border-gray-700 focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
+            >
+              <option value="All Time">All Time</option>
+              <option value="Today">Today</option>
+              <option value="Yesterday">Yesterday</option>
+              <option value="Last 7 Days">Last 7 Days</option>
+              <option value="Last 30 Days">Last 30 Days</option>
+            </select>
           </div>
-          
-          {/* Debug Button */}
-          <button
-            onClick={async () => {
-              if (!user) return;
-              try {
-                console.log("🔍 Debug: Checking all records for user:", user.uid);
-                const userQuery = query(collection(db, "bookings"), where("userId", "==", user.uid));
-                const userSnapshot = await getDocs(userQuery);
-                const allQuery = query(collection(db, "bookings"));
-                const allSnapshot = await getDocs(allQuery);
-                const recordsWithoutUserId = allSnapshot.docs.filter(doc => !doc.data().userId);
-                console.log("📊 Records with userId:", userSnapshot.docs.length);
-                console.log("⚠️ Records without userId:", recordsWithoutUserId.length);
-                toast.success(`Debug: ${userSnapshot.docs.length} user records, ${recordsWithoutUserId.length} without userId`);
-              } catch (error) {
-                console.error("Debug error:", error);
-                toast.error("Debug failed");
-              }
-            }}
-            className="text-xs bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600 transition-colors"
-            title="Debug: Check data records"
-          >
-            🐛 Debug
-          </button>
-          
-          {/* Loading indicator */}
-          {loading && (
-            <span className="text-blue-600 animate-pulse">Processing...</span>
-          )}
-
-        {/* Status Filter */}
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="border rounded-lg px-3 py-2 shadow-sm"
-        >
-            <option value="All">All Status</option>
-          <option value="Approved">Approved</option>
-          <option value="Rejected">Rejected</option>
-          <option value="Processing">Processing</option>
-        </select>
         </div>
-      </div>
 
-      <div className="overflow-x-auto bg-white rounded-xl shadow-lg">
-        <table className="min-w-full text-sm text-left border-collapse">
-          <thead className="bg-gradient-to-r from-blue-500 to-green-500 text-white">
-            <tr>
-              <th className="px-4 py-3">#</th>
-              <th className="px-4 py-3">Passport</th>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Visa Type</th>
-              <th className="px-4 py-3">Country</th>
-           
-              <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3">Total Fee</th>
-              <th className="px-4 py-3">Received Fee</th>
-              <th className="px-4 py-3">Remaining Fee</th>
-              <th className="px-4 py-3">Payment</th>
-              <th className="px-4 py-3">Visa Status</th>
-              <th className="px-4 py-3">Reference</th>
-              <th className="px-4 py-3">Sent to Embassy</th>
-              <th className="px-4 py-3">Received from Embassy</th>
-              <th className="px-4 py-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {bookings.length === 0 ? (
-              <tr>
-                <td colSpan="10" className="px-4 py-8 text-center text-gray-500">
-                  No visa records found for your account
-                </td>
-              </tr>
-            ) : (
-              bookings.map((b, index) => (
-                <tr key={b.id} className="border-b hover:bg-gray-50 transition-colors">
-                {editing === b.id ? (
-                    // ✅ Edit Mode
-                  <>
-                      <td className="px-4 py-2 font-medium text-gray-600">
-                        {index + 1}
-                      </td>
-                    <td className="px-4 py-2">
-                      <input
-                          value={editData.passport}
-                        onChange={(e) =>
-                          setEditData({ ...editData, passport: e.target.value })
-                        }
-                          className="border px-2 py-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Passport Number *"
-                          disabled={loading}
-                      />
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <FaSpinner className="animate-spin text-blue-500 text-4xl" />
+          </div>
+        ) : filteredBookings.length === 0 ? (
+          <div className="text-center p-10 bg-gray-900 rounded-xl border border-gray-800">
+            <p className="text-lg text-gray-400">No visa records found for your account based on the selected filters.</p>
+          </div>
+        ) : (
+          <div className="bg-gray-900 rounded-xl shadow-lg border border-gray-800 overflow-x-auto">
+            <table className="min-w-full text-sm text-left border-collapse">
+              <thead className="bg-gray-800">
+                <tr>
+                  <th className="px-4 py-3 text-gray-400">#</th>
+                  <th className="px-4 py-3 text-gray-400">Passport / Name</th>
+                  <th className="px-4 py-3 text-gray-400">Country / Visa Type</th>
+                  <th className="px-4 py-3 text-gray-400">Status</th>
+                  <th className="px-4 py-3 text-gray-400">Financials</th>
+                  <th className="px-4 py-3 text-gray-400">Embassy Info</th>
+                  <th className="px-4 py-3 text-gray-400">Vendor Info</th>
+                  <th className="px-4 py-3 text-gray-400">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredBookings.map((b, index) => (
+                  <tr key={b.id} className="border-t border-gray-800 hover:bg-gray-800 transition-colors">
+                    <td className="px-4 py-4 align-top">{index + 1}</td>
+                    <td className="px-4 py-4 align-top">
+                      <div className="font-bold text-white">{b.fullName}</div>
+                      <div className="text-gray-400 text-xs">{b.passport}</div>
                     </td>
-                    <td className="px-4 py-2">
-                      <input
-                          value={editData.fullName}
-                        onChange={(e) =>
-                          setEditData({ ...editData, fullName: e.target.value })
-                        }
-                          className="border px-2 py-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Full Name *"
-                          disabled={loading}
-                      />
+                    <td className="px-4 py-4 align-top">
+                      <div className="font-bold text-white">{b.country}</div>
+                      <div className="text-gray-400 text-xs">{b.visaType}</div>
                     </td>
-                    <td className="px-4 py-2">
-                      <input
-                          value={editData.visaType}
-                        onChange={(e) =>
-                          setEditData({ ...editData, visaType: e.target.value })
-                        }
-                          className="border px-2 py-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Visa Type"
-                          disabled={loading}
-                      />
+                    <td className="px-4 py-4 align-top">
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full text-white ${getStatusColor(b.visaStatus)}`}>
+                        {b.visaStatus}
+                      </span>
                     </td>
-                    
-                    <td className="px-4 py-2">
-                      <input
-                          value={editData.country}
-                        onChange={(e) =>
-                          setEditData({ ...editData, country: e.target.value })
-                        }
-                          className="border px-2 py-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Country"
-                          disabled={loading}
-                      />
+                    <td className="px-4 py-4 align-top">
+                      <div className="text-green-400">Total: {b.totalFee}</div>
+                      <div className="text-blue-400">Received: {b.receivedFee}</div>
+                      <div className="text-red-400">Remaining: {b.remainingFee}</div>
+                      <div className="text-gray-400 text-xs">{b.paymentStatus}</div>
                     </td>
-                    <td className="px-4 py-2">
-                      <input
-                          type="date"
-                          value={editData.date}
-                        onChange={(e) =>
-                          setEditData({ ...editData, date: e.target.value })
-                        }
-                          className="border px-2 py-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          disabled={loading}
-                      />
+                    <td className="px-4 py-4 align-top">
+                      <div className="text-gray-300">Sent: {b.sentToEmbassy || "-"}</div>
+                      <div className="text-gray-300">Received: {b.receiveFromEmbassy || "-"}</div>
+                      <div className="text-gray-300">Ref: {b.embassyFee || "-"}</div>
                     </td>
-                    <td className="px-4 py-2">
-                     
-                         <span>{editData.totalFee}</span>
-                      </td>
-                      <td className="px-4 py-2">
-                        <input
-                          type="number"
-                          value={editData.receivedFee}
-                          onChange={(e) =>
-                            setEditData({ ...editData, receivedFee: e.target.value })
-                          }
-                          className="border px-2 py-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Received Fee"
-                          disabled={loading}
-                        />
-                      </td>
-                      <td className="px-4 py-2">
-                        <input
-                          type="number"
-                          value={editData.remainingFee}
-                          onChange={(e) =>
-                            setEditData({ ...editData, remainingFee: e.target.value })
-                          }
-                          className="border px-2 py-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Remaining Fee"
-                          disabled={loading}
-                      />
+                    <td className="px-4 py-4 align-top">
+                      <div className="text-gray-300">Vendor Contact: {b.vendorContact || "-"}</div>
+                      <div className="text-gray-300">Vendor Fee: {b.vendorFee || "-"}</div>
                     </td>
-                    <td className="px-4 py-2">
-                      <select
-                        value={editData.paymentStatus}
-                        onChange={(e) =>
-                          setEditData({
-                            ...editData,
-                            paymentStatus: e.target.value,
-                          })
-                        }
-                          className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          disabled={loading}
-                      >
-                        <option value="Paid">Paid</option>
-                        <option value="Unpaid">Unpaid</option>
-                         <option value="Partially Paid">Partially Paid</option>  
-                      </select>
-                    </td>
-                    <td className="px-4 py-2">
-                      <select
-                        value={editData.visaStatus}
-                        onChange={(e) =>
-                          setEditData({
-                            ...editData,
-                            visaStatus: e.target.value,
-                          })
-                        }
-                          className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          disabled={loading}
-                      >
-                        <option value="Approved">Approved</option>
-                        <option value="Rejected">Rejected</option>
-                        <option value="Processing">Processing</option>
-                      </select>
-                    </td>
-                    <td className="px-4 py-2">
-                      <input
-                          value={editData.reference}
-                        onChange={(e) =>
-                          setEditData({ ...editData, reference: e.target.value })
-                        }
-                          className="border px-2 py-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Reference"
-                          disabled={loading}
-                      />
-                    </td>
-                    <td className="px-4 py-2">
-                      <input
-                          value={editData.sentToEmbessy}
-                        onChange={(e) =>
-                          setEditData({ ...editData, sentToEmbessy: e.target.value })
-                        }
-                          className="border px-2 py-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Sent to Embassy"
-                          disabled={loading}
-                      />
-                    </td>
-                    <td className="px-4 py-2">
-                      <input
-                          value={editData.reciveFromEmbessy}
-                        onChange={(e) =>
-                          setEditData({ ...editData, reciveFromEmbessy: e.target.value })
-                        }
-                          className="border px-2 py-1 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Received from Embassy"
-                          disabled={loading}
-                      />
-                    </td>
-                      <td className="px-4 py-2">
-                        <div className="flex gap-2">
-                      <button
-                        onClick={() => saveEdit(b.id)}
-                            disabled={loading}
-                            className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                      >
-                            {loading ? "..." : "Save"}
-                      </button>
-                      <button
-                            onClick={cancelEdit}
-                            disabled={loading}
-                            className="bg-gray-400 text-white px-3 py-1 rounded hover:bg-gray-500 disabled:cursor-not-allowed transition-colors"
-                      >
-                        Cancel
-                      </button>
-                        </div>
-                    </td>
-                  </>
-                ) : (
-                    // ✅ View Mode
-                    <>
-                      <td className="px-4 py-2 font-medium text-gray-600">
-                        {index + 1}
-                      </td>
-                      <td className="px-4 py-2 font-mono text-sm">
-                        {b.passport || "-"}
-                      </td>
-                      <td className="px-4 py-2 font-medium">{b.fullName || "-"}</td>
-                      <td className="px-4 py-2">{b.visaType || "-"}</td>
-                      <td className="px-4 py-2">{b.country || "-"}</td>
-                      <td className="px-4 py-2">{b.date || "-"}</td>
-                      <td className="px-4 py-2">{b.totalFee || "-"}</td>
-                      <td className="px-4 py-2">{b.receivedFee || "-"}</td>
-                      <td className="px-4 py-2">{b.remainingFee || "-"}</td>
-                    <td className="px-4 py-2">
-                      <select
-                          value={b.paymentStatus || "Unpaid"}
-                        onChange={(e) =>
-                          handleUpdate(b.id, "paymentStatus", e.target.value)
-                        }
-                          disabled={loading}
-                          className="border rounded px-2 py-1 cursor-pointer disabled:cursor-not-allowed"
-                      >
-                        <option value="Paid">Paid</option>
-                        <option value="Unpaid">Unpaid</option>
-                         <option value="Partially Paid">Partially Paid</option>  
-                      </select>
-                    </td>
-                    <td className="px-4 py-2">
-                      <select
-                          value={b.visaStatus || "Processing"}
-                        onChange={(e) =>
-                          handleUpdate(b.id, "visaStatus", e.target.value)
-                        }
-                          disabled={loading}
-                          className="border rounded px-2 py-1 cursor-pointer disabled:cursor-not-allowed"
-                      >
-                        <option value="Approved">Approved</option>
-                        <option value="Rejected">Rejected</option>
-                        <option value="Processing">Processing</option>
-                      </select>
-                    </td>
-                    <td className="px-4 py-2">{b.embassyFee || "-"}</td>
-                    <td className="px-4 py-2">{b.sentToEmbassy || "-"}</td>
-                    <td className="px-4 py-2">{b.receiveFromEmbassy || "-"}</td>
-                      <td className="px-4 py-2">
-                        <div className="flex gap-2">
+                    <td className="px-4 py-4 align-top">
                       <button
                         onClick={() => startEdit(b)}
-                            disabled={loading}
-                            className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                        className="bg-blue-600 text-white px-3 py-1 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors"
                       >
-                        Edit
+                        <FaEdit /> Edit
                       </button>
-                     
-                        </div>
                     </td>
-                  </>
-                )}
-              </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Debug Info - Remove in production */}
-      <div className="mt-4 text-xs text-gray-500">
-        Total Records: {bookings.length} | 
-        Filtered by: {filter} | 
-        {editing && ` Editing: ${editing}`}
-      </div>
+      {/* Edit Modal */}
+      {editing && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-gray-900 rounded-xl shadow-2xl border border-gray-800 p-8 w-full max-w-2xl relative my-8">
+            <button
+              onClick={cancelEdit}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            >
+              <FaTimes size={24} />
+            </button>
+            <h2 className="text-2xl font-bold text-white mb-6">Edit Visa Record</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-400">Passport Number</label>
+                <div className="relative mt-1">
+                  <FaPassport className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    name="passport"
+                    value={editData.passport || ""}
+                    onChange={(e) => setEditData({ ...editData, passport: e.target.value })}
+                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400">Full Name</label>
+                <div className="relative mt-1">
+                  <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={editData.fullName || ""}
+                    onChange={(e) => setEditData({ ...editData, fullName: e.target.value })}
+                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400">Visa Type</label>
+                <div className="relative mt-1">
+                  <FaIdCard className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    name="visaType"
+                    value={editData.visaType || ""}
+                    onChange={(e) => setEditData({ ...editData, visaType: e.target.value })}
+                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400">Country</label>
+                <div className="relative mt-1">
+                  <FaGlobeAmericas className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    name="country"
+                    value={editData.country || ""}
+                    onChange={(e) => setEditData({ ...editData, country: e.target.value })}
+                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400">Date</label>
+                <div className="relative mt-1">
+                  <FaCalendarAlt className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="date"
+                    name="date"
+                    value={editData.date || ""}
+                    onChange={(e) => setEditData({ ...editData, date: e.target.value })}
+                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400">Total Fee</label>
+                <div className="relative mt-1">
+                  <FaMoneyBillWave className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="number"
+                    name="totalFee"
+                    value={editData.totalFee || ""}
+                    onChange={(e) => setEditData({ ...editData, totalFee: e.target.value })}
+                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400">Received Fee</label>
+                <div className="relative mt-1">
+                  <FaMoneyBillWave className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="number"
+                    name="receivedFee"
+                    value={editData.receivedFee || ""}
+                    onChange={(e) => setEditData({ ...editData, receivedFee: e.target.value })}
+                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400">Remaining Fee</label>
+                <div className="relative mt-1">
+                  <FaMoneyBillWave className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="number"
+                    name="remainingFee"
+                    value={editData.remainingFee || ""}
+                    onChange={(e) => setEditData({ ...editData, remainingFee: e.target.value })}
+                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400">Payment Status</label>
+                <div className="relative mt-1">
+                  <FaMoneyBillWave className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <select
+                    name="paymentStatus"
+                    value={editData.paymentStatus || "Unpaid"}
+                    onChange={(e) => setEditData({ ...editData, paymentStatus: e.target.value })}
+                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="Paid">Paid</option>
+                    <option value="Unpaid">Unpaid</option>
+                    <option value="Partially Paid">Partially Paid</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400">Visa Status</label>
+                <div className="relative mt-1">
+                  <FaIdCard className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <select
+                    name="visaStatus"
+                    value={editData.visaStatus || "Processing"}
+                    onChange={(e) => setEditData({ ...editData, visaStatus: e.target.value })}
+                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                    <option value="Processing">Processing</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400">Embassy Fee</label>
+                <div className="relative mt-1">
+                  <FaMoneyBillWave className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    name="reference"
+                    value={editData.reference || ""}
+                    onChange={(e) => setEditData({ ...editData, reference: e.target.value })}
+                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400">Sent to Embassy</label>
+                <div className="relative mt-1">
+                  <FaPlane className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="date"
+                    name="sentToEmbessy"
+                    value={editData.sentToEmbessy || ""}
+                    onChange={(e) => setEditData({ ...editData, sentToEmbessy: e.target.value })}
+                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400">Received from Embassy</label>
+                <div className="relative mt-1">
+                  <FaPlane className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="date"
+                    name="reciveFromEmbessy"
+                    value={editData.reciveFromEmbessy || ""}
+                    onChange={(e) => setEditData({ ...editData, reciveFromEmbessy: e.target.value })}
+                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              {editData.visaType === "Appointment" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400">Vendor Contact</label>
+                    <div className="relative mt-1">
+                      <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        name="vendorContact"
+                        value={editData.vendorContact || ""}
+                        onChange={(e) => setEditData({ ...editData, vendorContact: e.target.value })}
+                        className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400">Vendor Fee</label>
+                    <div className="relative mt-1">
+                      <FaMoneyBillWave className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="number"
+                        name="vendorFee"
+                        value={editData.vendorFee || ""}
+                        onChange={(e) => setEditData({ ...editData, vendorFee: e.target.value })}
+                        className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="mt-8 flex justify-end gap-4">
+              <button
+                onClick={cancelEdit}
+                className="px-6 py-3 bg-gray-700 text-white rounded-xl font-semibold hover:bg-gray-600 transition-colors"
+                disabled={saving}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => saveEdit(editing)}
+                className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:bg-gray-700 disabled:cursor-not-allowed flex items-center gap-2"
+                disabled={saving}
+              >
+                {saving ? (
+                  <>
+                    <FaSpinner className="animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    <FaSave /> Save Changes
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <Footer />
     </div>
   );
 }
