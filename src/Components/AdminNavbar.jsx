@@ -46,6 +46,14 @@ function AdminNavbar() {
           >
             Umrah Bookings
           </Link>
+           <Link
+            to={"/adminHotelDet"}
+            className="text-gray-700 font-medium hover:text-blue-600 transition"
+            onClick={() => setMenuOpen(false)}
+          >
+           Hotel Bookings
+          </Link>
+
         </div>
 
         {/* Mobile Menu Button */}
@@ -105,6 +113,14 @@ function AdminNavbar() {
           >
             Umrah Bookings
           </Link>
+           <Link
+            to={"/adminHotelDet"}
+            className="text-gray-700 font-medium hover:text-blue-600 transition"
+            onClick={() => setMenuOpen(false)}
+          >
+           Hotel Bookings
+          </Link>
+
         </div>
       )}
     </nav>
