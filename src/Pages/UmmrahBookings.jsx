@@ -3,7 +3,6 @@ import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-
 import {
   collection,
   addDoc,
@@ -16,16 +15,16 @@ import {
 import toast from "react-hot-toast";
 import {
   FaSearch,
-  FaHotel,
-  FaPhoneAlt,
-  FaPassport,
   FaTimes,
   FaEdit,
   FaSave,
   FaPrint,
-  FaCalendarAlt,
+  FaSpinner,
+  FaDownload,
+  FaPlus,
 } from "react-icons/fa";
 import Footer from "../Components/Footer";
+import { Link } from "react-router-dom";
 
 export default function UmmrahBookings() {
   const [formData, setFormData] = useState({
@@ -59,7 +58,6 @@ export default function UmmrahBookings() {
   const [editData, setEditData] = useState({});
   const { user } = useAuth();
 
-  // Fetch all bookings
   useEffect(() => {
     const q = query(
       collection(db, "ummrahBookings"),
@@ -77,7 +75,6 @@ export default function UmmrahBookings() {
     return () => unsub();
   }, []);
 
-  // Calculate nights difference
   const calculateNights = (checkIn, checkOut) => {
     if (!checkIn || !checkOut) return "";
     const inDate = new Date(checkIn);
@@ -90,13 +87,11 @@ export default function UmmrahBookings() {
     const { name, value } = e.target;
     let updated = { ...formData, [name]: value };
 
-    // auto profit
     if (name === "payable" || name === "received") {
       updated.profit =
         Number(updated.received || 0) - Number(updated.payable || 0);
     }
 
-    // Auto calculate Makkah nights
     if (name === "makkahCheckIn" || name === "makkahCheckOut") {
       updated.makkahNights = calculateNights(
         updated.makkahCheckIn,
@@ -104,7 +99,6 @@ export default function UmmrahBookings() {
       );
     }
 
-    // Auto calculate Madinah nights
     if (name === "madinahCheckIn" || name === "madinahCheckOut") {
       updated.madinahNights = calculateNights(
         updated.madinahCheckIn,
@@ -112,8 +106,7 @@ export default function UmmrahBookings() {
       );
     }
 
-    if(name==="makkahCheckInagain" || name==="makkahCheckOutagain"){
-      updated.makkahagainNights=value;
+    if (name === "makkahCheckInagain" || name === "makkahCheckOutagain") {
       updated.makkahagainNights = calculateNights(
         updated.makkahCheckInagain,
         updated.makkahCheckOutagain
@@ -126,7 +119,16 @@ export default function UmmrahBookings() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     for (let key in formData) {
-      if (!formData[key] && key !== "profit" && key !== "makkahNights" && key !== "madinahNights") {
+      if (
+        !formData[key] &&
+        key !== "profit" &&
+        key !== "makkahNights" &&
+        key !== "madinahNights" &&
+        key !== "makkahCheckInagain" &&
+        key !== "makkahCheckOutagain" &&
+        key !== "makkahagainhotel" &&
+        key !== "makkahagainNights"
+      ) {
         return toast.error(`Please enter ${key}`);
       }
     }
@@ -158,8 +160,8 @@ export default function UmmrahBookings() {
         madinahNights: "",
         makkahCheckInagain: "",
         makkahCheckOutagain: "",
-        makkhagainhotel:"",
-        makkhagainNights:"",
+        makkahagainhotel: "",
+        makkahagainNights: "",
         vendor: "",
         payable: "",
         received: "",
@@ -189,8 +191,17 @@ export default function UmmrahBookings() {
     }, 100);
   };
 
-  const closeCard = (id) => {
-    setResults(results.filter((b) => b.id !== id));
+  const clearSearch = () => {
+    setResults([]);
+    setSearchTerm("");
+  };
+
+  const viewAllBookings = () => {
+    setResults(bookings);
+    setSearchTerm("");
+    setTimeout(() => {
+      resultsRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
   };
 
   const startEdit = (b) => {
@@ -198,10 +209,43 @@ export default function UmmrahBookings() {
     setEditData({ ...b });
   };
 
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    let updated = { ...editData, [name]: value };
+
+    if (name === "payable") {
+      updated.profit =
+        Number(updated.received || 0) - Number(value || 0);
+    }
+
+    if (name === "makkahCheckIn" || name === "makkahCheckOut") {
+      updated.makkahNights = calculateNights(
+        updated.makkahCheckIn,
+        updated.makkahCheckOut
+      );
+    }
+
+    if (name === "madinahCheckIn" || name === "madinahCheckOut") {
+      updated.madinahNights = calculateNights(
+        updated.madinahCheckIn,
+        updated.madinahCheckOut
+      );
+    }
+
+    if (name === "makkahCheckInagain" || name === "makkahCheckOutagain") {
+      updated.makkahagainNights = calculateNights(
+        updated.makkahCheckInagain,
+        updated.makkahCheckOutagain
+      );
+    }
+    setEditData(updated);
+  };
+
   const saveEdit = async (id) => {
     try {
+      setSaving(true);
       const docRef = doc(db, "ummrahBookings", id);
-      const { received, ...updateFields } = editData;
+      const { ...updateFields } = editData;
       await updateDoc(docRef, updateFields);
       toast.success("Booking updated!");
       setEditingId(null);
@@ -209,389 +253,477 @@ export default function UmmrahBookings() {
     } catch (err) {
       toast.error("Failed to update booking");
       console.error(err);
+    } finally {
+      setSaving(false);
     }
   };
 
+  const generateUmrahPDF = (booking) => {
+    if (!booking) return;
 
-const generateUmrahPDF = (booking) => {
+    const doc = new jsPDF("p", "mm", "a4");
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 15;
+    const contentWidth = pageWidth - 2 * margin;
+    const startX = margin;
+    const startY = margin;
 
-  if (!booking) return;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("OS TRAVELS & TOURS", pageWidth / 2, startY + 10, { align: "center" });
 
-  const doc = new jsPDF("p", "mm", "a4");
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 15;
-  const contentWidth = pageWidth - 2 * margin;
-  const startX = margin;
-  const startY = margin;
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(10);
+    doc.text("Your Trusted Umrah Partner", pageWidth / 2, startY + 16, { align: "center" });
 
-  // === HEADER ===
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.text("OS TRAVELS & TOURS", pageWidth / 2, startY + 10, { align: "center" });
+    doc.setDrawColor(50, 50, 50);
+    doc.line(margin, startY + 20, pageWidth - margin, startY + 20);
 
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(10);
-  doc.text("Your Trusted Umrah Partner", pageWidth / 2, startY + 16, { align: "center" });
+    doc.setFillColor(34, 139, 34);
+    doc.rect(startX, startY + 25, contentWidth, 8, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.text("UMRAH BOOKING REPORT", pageWidth / 2, startY + 31, { align: "center" });
 
-  doc.setDrawColor(50, 50, 50);
-  doc.line(margin, startY + 20, pageWidth - margin, startY + 20);
+    doc.setTextColor(0, 0, 0);
 
-  // === REPORT TITLE ===
-  doc.setFillColor(34, 139, 34); // Green theme
-  doc.rect(startX, startY + 25, contentWidth, 8, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(12);
-  doc.text("UMRAH BOOKING REPORT", pageWidth / 2, startY + 31, { align: "center" });
+    autoTable(doc, {
+      startY: startY + 38,
+      margin: { left: startX, right: startX },
+      tableWidth: contentWidth,
+      head: [["Field", "Value", "Field", "Value"]],
+      headStyles: {
+        fillColor: [40, 40, 40],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        fontSize: 9,
+      },
+      body: [
+        ["Full Name", booking.fullName || "-", "Phone", booking.phone || "-"],
+        ["Passport Number", booking.passportNumber || "-", "Visa Number", booking.visaNumber || "-"],
+        ["Vendor", booking.vendor || "-", "Profit", `${booking.profit || 0}`],
+        ["Payable", `PKR ${booking.payable || 0}`, "Received", `PKR ${booking.received || 0}`],
+        ["Makkah Hotel", booking.makkahHotel || "-", "Nights", booking.makkahNights || "-"],
+        ["Check In", booking.makkahCheckIn || "-", "Check Out", booking.makkahCheckOut || "-"],
+        ["Madinah Hotel", booking.madinahHotel || "-", "Nights", booking.madinahNights || "-"],
+        ["Check In", booking.madinahCheckIn || "-", "Check Out", booking.madinahCheckOut || "-"],
+        ["2nd Makkah Hotel", booking.makkahagainhotel || "-", "Nights", booking.makkahagainNights || "-"],
+        ["Check In", booking.makkahCheckInagain || "-", "Check Out", booking.makkahCheckOutagain || "-"],
+      ],
+      styles: {
+        fontSize: 9,
+        cellPadding: 3,
+        lineColor: [200, 200, 200],
+        lineWidth: 0.1,
+      },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+    });
 
-  doc.setTextColor(0, 0, 0);
+    let finalY = doc.lastAutoTable.finalY + 20;
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9);
+    doc.text("Authorized by OS Travels & Tours", margin, finalY);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth - margin, finalY, {
+      align: "right",
+    });
 
-  // === TABLE ===
-  autoTable(doc, {
-    startY: startY + 38,
-    margin: { left: startX, right: startX },
-    tableWidth: contentWidth,
-    head: [["Field", "Value", "Field", "Value"]],
-    headStyles: {
-      fillColor: [40, 40, 40],
-      textColor: [255, 255, 255],
-      fontStyle: "bold",
-      fontSize: 9,
-    },
-    body: [
-      ["Full Name", booking.fullName || "-", "Phone", booking.phone || "-"],
-      ["Passport Number", booking.passportNumber || "-", "Visa Number", booking.visaNumber || "-"],
-      ["Vendor", booking.vendor || "-", "Profit", `${booking.profit || 0}`],
-      ["Payable", `PKR ${booking.payable || 0}`, "Received", `PKR ${booking.received || 0}`],
-
-      // Makkah Stay
-      ["Makkah Hotel", booking.makkahHotel || "-", "Nights", booking.makkahNights || "-"],
-      ["Check In", booking.makkahCheckIn || "-", "Check Out", booking.makkahCheckOut || "-"],
-
-      // Madinah Stay
-      ["Madinah Hotel", booking.madinahHotel || "-", "Nights", booking.madinahNights || "-"],
-      ["Check In", booking.madinahCheckIn || "-", "Check Out", booking.madinahCheckOut || "-"],
-
-      // Second Makkah Stay
-      ["2nd Makkah Hotel", booking.makkahagainhotel || "-", "Nights", booking.makkahagainNights || "-"],
-      ["Check In", booking.makkahCheckInagain || "-", "Check Out", booking.makkahCheckOutagain || "-"],
-    ],
-    styles: {
-      fontSize: 9,
-      cellPadding: 3,
-      lineColor: [200, 200, 200],
-      lineWidth: 0.1,
-    },
-    alternateRowStyles: { fillColor: [245, 245, 245] },
-  });
-
-  // === FOOTER ===
-  let finalY = doc.lastAutoTable.finalY + 20;
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(9);
-  doc.text("Authorized by OS Travels & Tours", margin, finalY);
-  doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth - margin, finalY, {
-    align: "right",
-  });
-
-  // Save PDF
-  doc.save(
-    `Umrah_Booking_${booking.passportNumber}_${new Date().toISOString().split("T")[0]}.pdf`
-  );
-};
-
+    doc.save(`Umrah_Booking_${booking.passportNumber}_${new Date().toISOString().split("T")[0]}.pdf`);
+  };
 
   return (
-    <div
-      className="min-h-screen bg-cover bg-center bg-fixed"
-      style={{
-        backgroundImage:
-          "url('https://travocom.com/wp-content/uploads/2024/11/umrah-group-112-cover.png')",
-      }}
-    >
-      <div className="bg-black/60 min-h-screen flex flex-col items-center px-6 py-12">
-        {/* Title */}
-        <h1 className="text-5xl font-bold text-white text-center mb-10 drop-shadow-lg underline decoration-yellow-400">
-          Umrah Bookings Management
-        </h1>
+    <div className="min-h-screen bg-gray-950 text-gray-200 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-2">
+            Umrah Bookings Management 🕋
+          </h1>
+          <p className="text-gray-400 text-lg">
+            Add, view, and manage your Umrah booking records.
+          </p>
+        </div>
 
         {/* Form Card */}
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-6"
-        >
-          {/* Personal Info */}
-          {[
-            { label: "Full Name", name: "fullName" },
-            { label: "Phone Number", name: "phone" },
-            { label: "Passport Number", name: "passportNumber" },
-            { label: "Visa Number", name: "visaNumber" },
-            { label: "Vendor", name: "vendor" },
-            { label: "Received Amount", name: "received", type: "number" },
-            { label: "Payable Amount", name: "payable", type: "number" },
-            { label: "Profit", name: "profit", type: "number", readOnly: true },
-          ].map((field) => (
-            <div key={field.name} className="flex flex-col">
-              <label className="mb-1 font-semibold text-gray-700">
-                {field.label}
-              </label>
-              <input
-                type={field.type || "text"}
-                name={field.name}
-                value={formData[field.name]}
-                onChange={handleChange}
-                readOnly={field.readOnly}
-                className="border px-4 py-3 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          ))}
-
-          {/* Makkah Section */}
-          <div className="col-span-full mt-6">
-            <h2 className="text-xl font-bold text-blue-700 mb-3">Makkah Hotel</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-gray-900 rounded-xl shadow-lg border border-gray-800 p-6 md:p-8 mb-8">
+          <h2 className="text-xl font-bold text-white mb-4">
+            Add New Booking
+          </h2>
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Personal Info */}
+            <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <input
                 type="text"
-                placeholder="Hotel Name"
-                name="makkahHotel"
-                value={formData.makkahHotel}
+                name="fullName"
+                value={formData.fullName}
                 onChange={handleChange}
-                className="border px-4 py-3 rounded-xl"
+                placeholder="Full Name"
+                className="bg-gray-800 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 border border-gray-700"
               />
               <input
-                type="date"
-                name="makkahCheckIn"
-                value={formData.makkahCheckIn}
+                type="text"
+                name="phone"
+                value={formData.phone}
                 onChange={handleChange}
-                className="border px-4 py-3 rounded-xl"
+                placeholder="Phone Number"
+                className="bg-gray-800 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 border border-gray-700"
               />
               <input
-                type="date"
-                name="makkahCheckOut"
-                value={formData.makkahCheckOut}
+                type="text"
+                name="passportNumber"
+                value={formData.passportNumber}
                 onChange={handleChange}
-                className="border px-4 py-3 rounded-xl"
+                placeholder="Passport Number"
+                className="bg-gray-800 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 border border-gray-700"
+              />
+              <input
+                type="text"
+                name="visaNumber"
+                value={formData.visaNumber}
+                onChange={handleChange}
+                placeholder="Visa Number"
+                className="bg-gray-800 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 border border-gray-700"
+              />
+            </div>
+
+            {/* Hotel Sections */}
+            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                <h3 className="text-lg font-bold text-blue-400 mb-4">
+                  Makkah Hotel Details
+                </h3>
+                <div className="grid gap-4">
+                  <input
+                    type="text"
+                    name="makkahHotel"
+                    value={formData.makkahHotel}
+                    onChange={handleChange}
+                    placeholder="Hotel Name"
+                    className="bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 placeholder-gray-400 border border-gray-600"
+                  />
+                  <div className="flex gap-4">
+                    <input
+                      type="date"
+                      name="makkahCheckIn"
+                      value={formData.makkahCheckIn}
+                      onChange={handleChange}
+                      className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 placeholder-gray-400 border border-gray-600"
+                    />
+                    <input
+                      type="date"
+                      name="makkahCheckOut"
+                      value={formData.makkahCheckOut}
+                      onChange={handleChange}
+                      className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 placeholder-gray-400 border border-gray-600"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Nights"
+                    name="makkahNights"
+                    value={formData.makkahNights}
+                    readOnly
+                    className="bg-gray-700 text-gray-400 rounded-lg px-4 py-3 border border-gray-600 cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                <h3 className="text-lg font-bold text-green-400 mb-4">
+                  Madinah Hotel Details
+                </h3>
+                <div className="grid gap-4">
+                  <input
+                    type="text"
+                    name="madinahHotel"
+                    value={formData.madinahHotel}
+                    onChange={handleChange}
+                    placeholder="Hotel Name"
+                    className="bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 placeholder-gray-400 border border-gray-600"
+                  />
+                  <div className="flex gap-4">
+                    <input
+                      type="date"
+                      name="madinahCheckIn"
+                      value={formData.madinahCheckIn}
+                      onChange={handleChange}
+                      className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 placeholder-gray-400 border border-gray-600"
+                    />
+                    <input
+                      type="date"
+                      name="madinahCheckOut"
+                      value={formData.madinahCheckOut}
+                      onChange={handleChange}
+                      className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 placeholder-gray-400 border border-gray-600"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Nights"
+                    name="madinahNights"
+                    value={formData.madinahNights}
+                    readOnly
+                    className="bg-gray-700 text-gray-400 rounded-lg px-4 py-3 border border-gray-600 cursor-not-allowed"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Second Makkah Section */}
+            <div className="md:col-span-2 bg-gray-800 p-6 rounded-xl border border-gray-700">
+              <h3 className="text-lg font-bold text-blue-400 mb-4">
+                2nd Makkah Hotel (If applicable)
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <input
+                  type="text"
+                  name="makkahagainhotel"
+                  value={formData.makkahagainhotel}
+                  onChange={handleChange}
+                  placeholder="Hotel Name"
+                  className="bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 placeholder-gray-400 border border-gray-600"
+                />
+                <input
+                  type="date"
+                  name="makkahCheckInagain"
+                  value={formData.makkahCheckInagain}
+                  onChange={handleChange}
+                  className="bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 placeholder-gray-400 border border-gray-600"
+                />
+                <input
+                  type="date"
+                  name="makkahCheckOutagain"
+                  value={formData.makkahCheckOutagain}
+                  onChange={handleChange}
+                  className="bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 placeholder-gray-400 border border-gray-600"
+                />
+                <input
+                  type="text"
+                  placeholder="Nights"
+                  name="makkahagainNights"
+                  value={formData.makkahagainNights}
+                  readOnly
+                  className="bg-gray-700 text-gray-400 rounded-lg px-4 py-3 border border-gray-600 cursor-not-allowed"
+                />
+              </div>
+            </div>
+
+            {/* Financial Info */}
+            <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <input
+                type="text"
+                name="vendor"
+                value={formData.vendor}
+                onChange={handleChange}
+                placeholder="Vendor"
+                className="bg-gray-800 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 placeholder-gray-400 border border-gray-700"
               />
               <input
                 type="number"
-                placeholder="Nights"
-                name="makkahNights"
-                value={formData.makkahNights}
-                readOnly
-                className="border px-4 py-3 rounded-xl bg-gray-100"
-              />
-            </div>
-          </div>
-
-          {/* Madinah Section */}
-          <div className="col-span-full mt-6">
-            <h2 className="text-xl font-bold text-green-700 mb-3">Madinah Hotel</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <input
-                type="text"
-                placeholder="Hotel Name"
-                name="madinahHotel"
-                value={formData.madinahHotel}
+                name="payable"
+                value={formData.payable}
                 onChange={handleChange}
-                className="border px-4 py-3 rounded-xl"
-              />
-              <input
-                type="date"
-                name="madinahCheckIn"
-                value={formData.madinahCheckIn}
-                onChange={handleChange}
-                className="border px-4 py-3 rounded-xl"
-              />
-              <input
-                type="date"
-                name="madinahCheckOut"
-                value={formData.madinahCheckOut}
-                onChange={handleChange}
-                className="border px-4 py-3 rounded-xl"
+                placeholder="Payable Amount"
+                className="bg-gray-800 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 placeholder-gray-400 border border-gray-700"
               />
               <input
                 type="number"
-                placeholder="Nights"
-                name="madinahNights"
-                value={formData.madinahNights}
-                readOnly
-                className="border px-4 py-3 rounded-xl bg-gray-100"
+                name="received"
+                value={formData.received}
+                onChange={handleChange}
+                placeholder="Received Amount"
+                className="bg-gray-800 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 placeholder-gray-400 border border-gray-700"
               />
-            </div>
-          </div>
-          <div className="col-span-full mt-6">
-            <h2 className="text-xl font-bold text-green-700 mb-3">Makkah Hotel</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <input
                 type="text"
-                placeholder="Hotel Name"
-                name="makkahagainhotel"
-                value={formData.makkahagainhotel}
-                onChange={handleChange}
-                className="border px-4 py-3 rounded-xl"
-              />
-              
-              <input
-                type="date"
-                name="makkahCheckInagain"
-                value={formData.makkahCheckInagain}
-                onChange={handleChange}
-                className="border px-4 py-3 rounded-xl"
-              />
-              <input
-                type="date"
-                name="makkahCheckOutagain"
-                value={formData.makkahCheckOutagain}
-                onChange={handleChange}
-                className="border px-4 py-3 rounded-xl"
-              />
-               <input
-                type="number"
-                placeholder="Nights"
-                name="makkahNightsagain"
-                value={formData.makkahagainNights}
+                name="profit"
+                value={formData.profit}
                 readOnly
-                className="border px-4 py-3 rounded-xl bg-gray-100"
+                placeholder="Profit"
+                className="bg-gray-800 text-green-400 font-bold rounded-lg px-4 py-3 border border-gray-700 cursor-not-allowed"
               />
-          
             </div>
-          </div>
 
-          
-
-
-          <button
-            type="submit"
-            disabled={saving}
-            className="col-span-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-semibold py-3 rounded-xl shadow hover:scale-105 transition disabled:opacity-70"
-          >
-            {saving ? "Saving..." : "Add Booking"}
-          </button>
-        </form>
-
-        {/* Search */}
-        <div className="w-full max-w-4xl mt-10">
-          <form
-            onSubmit={handleSearch}
-            className="flex items-center bg-white rounded-full shadow-lg px-6 py-3"
-          >
-            <FaSearch className="text-gray-500 mr-3" />
-            <input
-              type="text"
-              placeholder="Search by Name, Passport, or Phone..."
-              className="flex-1 outline-none bg-transparent text-gray-700"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
             <button
               type="submit"
-              className="ml-4 px-6 py-2 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700"
+              disabled={saving}
+              className="col-span-full mt-4 flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors disabled:bg-gray-700 disabled:cursor-not-allowed"
             >
-              Search
+              {saving ? (
+                <>
+                  <FaSpinner className="animate-spin" /> Saving...
+                </>
+              ) : (
+                <>
+                  <FaPlus className="text-lg" /> Add Booking
+                </>
+              )}
             </button>
           </form>
         </div>
 
+        {/* Search Section */}
+        <div className="bg-gray-900 rounded-xl shadow-lg border border-gray-800 p-6 md:p-8 mb-8">
+          <h2 className="text-xl font-bold text-white mb-4">
+            Find a Booking
+          </h2>
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="relative flex-1 w-full">
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by Name, Passport, or Phone..."
+                className="w-full bg-gray-800 text-white rounded-lg px-12 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 border border-gray-700"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-4">
+              <button
+                type="submit"
+                className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+              >
+                Search
+              </button>
+              {results.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  className="p-3 bg-gray-700 text-gray-400 rounded-xl hover:bg-gray-600 transition-colors"
+                  title="Clear Results"
+                >
+                  <FaTimes size={20} />
+                </button>
+              )}
+            </div>
+          </form>
+          <div className="mt-4 text-center">
+            <Link
+              type="button"
+              to="/viewAllUmmrahBookings"
+              className="px-6 py-3 bg-gray-700 text-white rounded-xl font-semibold hover:bg-gray-600 transition-colors"
+            >
+              View All Bookings
+            </Link>
+          </div>
+        </div>
+
         {/* Search Results */}
         {results.length > 0 && (
-          <div ref={resultsRef} className="w-full max-w-5xl mt-8 grid gap-6">
-            {results.map((b) => (
-              <div
-                key={b.id}
-                className="bg-white/95 backdrop-blur-lg rounded-2xl shadow-lg p-6 relative"
-              >
-                {/* Actions */}
-                <div className="absolute top-3 right-3 flex gap-2 cursor-pointer">
-                  {editingId === b.id ? (
+          <div ref={resultsRef} className="w-full">
+            <h2 className="text-2xl font-bold text-white mb-4">Search Results</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {results.map((b) => (
+                <div
+                  key={b.id}
+                  className="bg-gray-900 rounded-xl shadow-lg border border-gray-800 p-6 relative"
+                >
+                  {/* Actions */}
+                  <div className="absolute top-4 right-4 flex flex-col sm:flex-row gap-2">
+                    {editingId === b.id ? (
+                      <button
+                        onClick={() => saveEdit(b.id)}
+                        disabled={saving}
+                        className="bg-green-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 text-xs hover:bg-green-700 transition-colors disabled:opacity-50"
+                      >
+                        {saving ? <FaSpinner className="animate-spin" /> : <FaSave />}
+                        {saving ? "" : "Save"}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => startEdit(b)}
+                        className="bg-blue-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 text-xs hover:bg-blue-700 transition-colors"
+                      >
+                        <FaEdit /> Edit
+                      </button>
+                    )}
                     <button
-                      onClick={() => saveEdit(b.id)}
-                      className="bg-green-600 cursor-pointer text-white px-3 py-1 rounded-md flex items-center gap-1"
+                      onClick={() => generateUmrahPDF(b)}
+                      className="bg-orange-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 text-xs hover:bg-orange-700 transition-colors"
                     >
-                      <FaSave /> Save
+                      <FaDownload /> PDF
                     </button>
-                  ) : (
-                    <button
-                      onClick={() => startEdit(b)}
-                      className="bg-blue-600 cursor-pointer text-white px-3 py-1 rounded-md flex items-center gap-1"
-                    >
-                      <FaEdit /> Edit
-                    </button>
-                  )}
-                  <button
-                  onClick={() => generateUmrahPDF(b)}
-                  className="bg-green-600 cursor-pointer text-white px-3 py-1 rounded-md flex items-center gap-1"
-                  >
-                    <FaPrint />  Print
-                  </button>
-                  <button
-                    onClick={() => closeCard(b.id)}
-                    className="bg-red-600 text-white cursor-pointer px-3 py-1 rounded-md flex items-center gap-1"
-                  >
-                    <FaTimes /> Close
-                  </button>
-                </div>
+                  </div>
 
-                {editingId === b.id ? (
-                  // Edit mode
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Object.keys(editData).map((key) =>
-                      key === "received" || key === "id" || key === "createdAt"
-                        ? null
-                        : (
+                  {editingId === b.id ? (
+                    // Edit mode
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {Object.keys(editData).map((key) =>
+                        key === "id" || key === "createdAt" || key === "createdByUid" || key === "createdByEmail" || key === "createdByName" || key === "profit" || key === "received" ? null : (
                           <div key={key} className="flex flex-col">
-                            <label className="text-sm font-medium text-gray-600">
-                              {key}
+                            <label className="text-xs font-medium text-gray-400 capitalize">
+                              {key.replace(/([A-Z])/g, ' $1').trim()}
                             </label>
                             <input
-                              type="text"
-                              value={editData[key]}
-                              onChange={(e) =>
-                                setEditData({ ...editData, [key]: e.target.value })
-                              }
-                              className="border px-3 py-2 rounded-md"
+                              type={key.includes("date") || key.includes("nights") || key.includes("payable") ? "number" : "text"}
+                              value={editData[key] || ""}
+                              onChange={handleEditChange}
+                              name={key}
+                              className="bg-gray-800 text-white rounded-lg px-3 py-2 border border-gray-700"
                             />
                           </div>
                         )
-                    )}
-                  </div>
-                ) : (
-                  // View mode
-                  <>
-                    <h2 className="text-2xl font-bold text-blue-700 mb-2">
-                      {b.fullName}
-                    </h2>
-                    <p className="text-gray-600 mb-2 flex items-center gap-2">
-                      <FaPhoneAlt className="text-blue-600" /> {b.phone}
-                    </p>
-                    <p className="text-gray-600 mb-2 flex items-center gap-2">
-                      <FaPassport className="text-blue-600" /> Passport:{" "}
-                      {b.passportNumber} | Visa: {b.visaNumber}
-                    </p>
+                      )}
+                    </div>
+                  ) : (
+                    // View mode
+                    <div className="flex flex-col gap-3">
+                      <h2 className="text-xl font-bold text-blue-400">
+                        {b.fullName}
+                      </h2>
+                      <div className="flex flex-wrap gap-x-6 gap-y-2 text-gray-400 text-sm">
+                        <p className="font-medium">
+                          Phone: <span className="text-white">{b.phone}</span>
+                        </p>
+                        <p className="font-medium">
+                          Passport: <span className="text-white">{b.passportNumber}</span>
+                        </p>
+                        <p className="font-medium">
+                          Visa: <span className="text-white">{b.visaNumber}</span>
+                        </p>
+                      </div>
 
-                    {/* Makkah Info */}
-                    <p className="text-gray-600 mb-2 flex items-center gap-2">
-                      <FaHotel className="text-green-600" /> Makkah: {b.makkahHotel} | 
-                      Check-in: {b.makkahCheckIn} | Check-out: {b.makkahCheckOut} | Nights: {b.makkahNights}
-                    </p>
+                      <div className="bg-gray-800 rounded-lg p-4 mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 border border-gray-700">
+                        <div>
+                          <p className="font-semibold text-blue-400">Makkah Stay</p>
+                          <p className="text-sm text-gray-300 mt-1">Hotel: {b.makkahHotel}</p>
+                          <p className="text-sm text-gray-300">Dates: {b.makkahCheckIn} - {b.makkahCheckOut}</p>
+                          <p className="text-sm text-gray-300">Nights: {b.makkahNights}</p>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-green-400">Madinah Stay</p>
+                          <p className="text-sm text-gray-300 mt-1">Hotel: {b.madinahHotel}</p>
+                          <p className="text-sm text-gray-300">Dates: {b.madinahCheckIn} - {b.madinahCheckOut}</p>
+                          <p className="text-sm text-gray-300">Nights: {b.madinahNights}</p>
+                        </div>
+                        {b.makkahagainhotel && (
+                          <div>
+                            <p className="font-semibold text-blue-400">2nd Makkah Stay</p>
+                            <p className="text-sm text-gray-300 mt-1">Hotel: {b.makkahagainhotel}</p>
+                            <p className="text-sm text-gray-300">Dates: {b.makkahCheckInagain} - {b.makkahCheckOutagain}</p>
+                            <p className="text-sm text-gray-300">Nights: {b.makkahagainNights}</p>
+                          </div>
+                        )}
+                      </div>
 
-                    {/* Madinah Info */}
-                    <p className="text-gray-600 mb-2 flex items-center gap-2">
-                      <FaHotel className="text-green-600" /> Madinah: {b.madinahHotel} | 
-                      Check-in: {b.madinahCheckIn} | Check-out: {b.madinahCheckOut} | Nights: {b.madinahNights}
-                    </p>
-
-                    <p className="text-gray-700 font-medium">
-                      Vendor: {b.vendor} | Payable:{" "}
-                      <span className="text-red-600">PKR {b.payable}</span> |
-                      Received:{" "}
-                      <span className="text-green-600">PKR {b.received}</span> |
-                      Profit:{" "}
-                      <span className="text-blue-700">PKR {b.profit}</span>
-                    </p>
-                  </>
-                )}
-              </div>
-            ))}
+                      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                        <p className="font-medium">
+                          Vendor: <span className="text-white">{b.vendor}</span>
+                        </p>
+                        <p className="font-medium">
+                          Payable: <span className="text-red-400 font-bold">PKR {b.payable}</span>
+                        </p>
+                        <p className="font-medium">
+                          Received: <span className="text-green-400 font-bold">PKR {b.received}</span>
+                        </p>
+                        <p className="font-medium">
+                          Profit: <span className="text-yellow-400 font-bold">PKR {b.profit}</span>
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
