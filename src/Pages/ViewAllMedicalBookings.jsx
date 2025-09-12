@@ -1,14 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
 import { db } from "../firebase";
-import { collection, onSnapshot, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, onSnapshot, doc, updateDoc } from "firebase/firestore";
 import toast from "react-hot-toast";
 
-// Import jspdf and jspdf-autotable
+// Correct import for jspdf-autotable
 import { jsPDF } from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 // Icons for a richer UI
-import { FaEdit, FaTrash, FaSpinner, FaFilePdf, FaSearch, FaFilter, FaCalendarAlt, FaCalendarWeek, FaCalendarDay, FaUser, FaBuilding, FaPassport, FaIdCard, FaGlobe, FaPhone, FaDollarSign } from "react-icons/fa";
+import { FaEdit, FaSpinner, FaFilePdf, FaSearch, FaFilter, FaCalendarAlt, FaCalendarWeek, FaCalendarDay, FaUser, FaBuilding, FaPassport, FaIdCard, FaGlobe, FaPhone, FaDollarSign, FaEye } from "react-icons/fa";
 import { MdClose } from "react-icons/md";
 import { BiCalculator } from "react-icons/bi";
 
@@ -18,6 +18,7 @@ export default function ViewAllMedicalBookings() {
     const [filteredBookings, setFilteredBookings] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [editModalOpen, setEditModalOpen] = useState(false);
+    const [viewModalOpen, setViewModalOpen] = useState(false);
     const [currentBooking, setCurrentBooking] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -67,30 +68,32 @@ export default function ViewAllMedicalBookings() {
 
         if (filterPeriod === "today") {
             tempBookings = tempBookings.filter(b => {
-                const bookingDate = b.createdAt ? b.createdAt.toDate() : new Date(b.createdAt);
-                return bookingDate.toDateString() === today.toDateString();
+                const bookingDate = b.createdAt?.toDate?.() || (b.createdAt ? new Date(b.createdAt) : null);
+                return bookingDate && bookingDate.toDateString() === today.toDateString();
             });
         } else if (filterPeriod === "this-week") {
             const firstDayOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
             tempBookings = tempBookings.filter(b => {
-                const bookingDate = b.createdAt ? b.createdAt.toDate() : new Date(b.createdAt);
-                return bookingDate >= firstDayOfWeek;
+                const bookingDate = b.createdAt?.toDate?.() || (b.createdAt ? new Date(b.createdAt) : null);
+                return bookingDate && bookingDate >= firstDayOfWeek;
             });
         } else if (filterPeriod === "this-month") {
             const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
             tempBookings = tempBookings.filter(b => {
-                const bookingDate = b.createdAt ? b.createdAt.toDate() : new Date(b.createdAt);
-                return bookingDate >= firstDayOfMonth;
+                const bookingDate = b.createdAt?.toDate?.() || (b.createdAt ? new Date(b.createdAt) : null);
+                return bookingDate && bookingDate >= firstDayOfMonth;
             });
         }
 
         if (searchTerm) {
             const lowerCaseSearch = searchTerm.toLowerCase();
-            tempBookings = tempBookings.filter(b => 
-                b.NameofInsured.toLowerCase().includes(lowerCaseSearch) ||
-                b.passportNumber.toLowerCase().includes(lowerCaseSearch) ||
-                b.Nic.toLowerCase().includes(lowerCaseSearch) ||
-                b.contactNumber.toLowerCase().includes(lowerCaseSearch)
+            tempBookings = tempBookings.filter(b =>
+                (b.NameofInsured && b.NameofInsured.toLowerCase().includes(lowerCaseSearch)) ||
+                (b.NameofCompany && b.NameofCompany.toLowerCase().includes(lowerCaseSearch)) ||
+                (b.countryofTravel && b.countryofTravel.toLowerCase().includes(lowerCaseSearch)) ||
+                (b.passportNumber && b.passportNumber.toLowerCase().includes(lowerCaseSearch)) ||
+                (b.Nic && b.Nic.toLowerCase().includes(lowerCaseSearch)) ||
+                (b.contactNumber && b.contactNumber.toLowerCase().includes(lowerCaseSearch))
             );
         }
 
@@ -102,43 +105,53 @@ export default function ViewAllMedicalBookings() {
     const totalPayable = filteredBookings.reduce((sum, b) => sum + (Number(b.totalPayableAmount) || 0), 0);
     const totalProfit = filteredBookings.reduce((sum, b) => sum + (Number(b.totalProfit) || 0), 0);
 
-    // PDF Generation Function
+    // New and Improved PDF Generation Function
     const generatePDF = (booking) => {
         const doc = new jsPDF();
-        doc.setFontSize(18);
-        doc.text("Medical Insurance Booking Details", 14, 22);
+        
+        // Header Section
+        doc.setFontSize(22);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(30);
+        doc.text("Medical Insurance Booking Report", doc.internal.pageSize.width / 2, 25, { align: "center" });
+
         doc.setFontSize(11);
+        doc.setFont("helvetica", "normal");
         doc.setTextColor(100);
+        doc.text(`Report for: ${booking.NameofInsured || "N/A"}`, 14, 40);
+        doc.text(`Passport No.: ${booking.passportNumber || "N/A"}`, 14, 46);
+        doc.text(`Generated on: ${new Date().toLocaleDateString()}`, doc.internal.pageSize.width - 14, 46, { align: "right" });
 
         const tableData = [
-            ["Company Name", booking.NameofCompany],
-            ["Insured's Name", booking.NameofInsured],
-            ["Age", booking.age],
-            ["Passport Number", booking.passportNumber],
-            ["NIC", booking.Nic],
-            ["Country of Travel", booking.countryofTravel],
-            ["Contact Number", booking.contactNumber],
-            ["No. of Days", booking.noOfdays],
-            ["Effective Date", booking.EffectiveDate],
-            ["Expiry Date", booking.ExpiryDate],
-            ["Issued At", booking.IssuedAt],
-            ["Total Received Amount", `$${booking.totalReceivedAmount}`],
-            ["Total Payable Amount", `$${booking.totalPayableAmount}`],
-            ["Total Profit", `$${booking.totalProfit}`],
-            ["Created At", booking.createdAt?.toDate().toLocaleString() || booking.createdAt],
-            ["Created By", booking.userEmail],
+            ["Company Name", booking.NameofCompany || "N/A"],
+            ["Insured's Name", booking.NameofInsured || "N/A"],
+            ["Age", booking.age || "N/A"],
+            ["Passport Number", booking.passportNumber || "N/A"],
+            ["NIC", booking.Nic || "N/A"],
+            ["Country of Travel", booking.countryofTravel || "N/A"],
+            ["Contact Number", booking.contactNumber || "N/A"],
+            ["No. of Days", booking.noOfdays || "N/A"],
+            ["Effective Date", booking.EffectiveDate || "N/A"],
+            ["Expiry Date", booking.ExpiryDate || "N/A"],
+            ["Issued At", booking.IssuedAt || "N/A"],
+            ["Total Received Amount", `$${Number(booking.totalReceivedAmount || 0).toFixed(2)}`],
+            ["Total Payable Amount", `$${Number(booking.totalPayableAmount || 0).toFixed(2)}`],
+            ["Total Profit", `$${Number(booking.totalProfit || 0).toFixed(2)}`],
+            ["Created At", booking.createdAt?.toDate?.().toLocaleString?.() || "N/A"],
+            ["Created By", booking.userEmail || "N/A"],
         ];
 
-        doc.autoTable({
-            startY: 30,
-            head: [['Field', 'Details']],
+        autoTable(doc, {
+            startY: 55,
+            head: [["Field", "Details"]],
             body: tableData,
-            theme: 'striped',
+            theme: "striped",
             headStyles: { fillColor: [52, 73, 94], textColor: 255, fontSize: 10 },
             bodyStyles: { fontSize: 9 },
-            alternateRowStyles: { fillColor: [241, 245, 249] }
+            alternateRowStyles: { fillColor: [241, 245, 249] },
         });
-        doc.save(`Medical_Insurance_${booking.passportNumber}.pdf`);
+
+        doc.save(`Medical_Insurance_${booking.passportNumber || "record"}.pdf`);
         toast.success("PDF generated successfully!");
     };
 
@@ -147,24 +160,57 @@ export default function ViewAllMedicalBookings() {
         setEditModalOpen(true);
     };
 
-    const handleDeleteBooking = async (id) => {
-        if (window.confirm("Are you sure you want to delete this record?")) {
-            try {
-                await deleteDoc(doc(db, "medical_insurance", id));
-                toast.success("Record deleted successfully!");
-            } catch (error) {
-                console.error("Error removing document: ", error);
-                toast.error("Failed to delete record.");
-            }
+    const handleViewClick = (booking) => {
+        setCurrentBooking(booking);
+        setViewModalOpen(true);
+    };
+
+    const handleSaveEdit = async (dataToUpdate) => {
+        setIsSaving(true);
+        try {
+            const docRef = doc(db, "medical_insurance", currentBooking.id);
+            await updateDoc(docRef, dataToUpdate);
+            toast.success("Record updated successfully!");
+            setEditModalOpen(false);
+        } catch (error) {
+            console.error("Error updating document: ", error);
+            toast.error("Failed to update record. Please try again.");
+        } finally {
+            setIsSaving(false);
         }
     };
 
-    // New EditModal component to handle its own state
+    // New component to display details
+    const ViewModal = ({ booking, formFields, onClose }) => {
+        return (
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-70 flex items-center justify-center p-4">
+                <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-700 w-full max-w-4xl p-8 transform transition-all duration-300 scale-95 animate-scale-in">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-2xl font-bold text-white">Medical Insurance Details</h3>
+                        <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors duration-200">
+                            <MdClose className="text-2xl" />
+                        </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm md:text-base">
+                        {formFields.map((field) => (
+                            <div key={field.name} className="flex flex-col">
+                                <span className="font-semibold text-gray-400">{field.label}:</span>
+                                <span className="text-white mt-1">
+                                    {booking[field.name] || "N/A"}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    // EditModal component (unchanged)
     const EditModal = ({ booking, formFields, onClose, onSave, isSaving }) => {
-        const [editFormData, setEditFormData] = useState(booking);
+        const [editFormData, setEditFormData] = useState(booking || {});
         const [errors, setErrors] = useState({});
 
-        // Sync local state when the modal opens
         useEffect(() => {
             setEditFormData(booking);
         }, [booking]);
@@ -242,21 +288,6 @@ export default function ViewAllMedicalBookings() {
         );
     };
 
-    const handleSaveEdit = async (dataToUpdate) => {
-        setIsSaving(true);
-        try {
-            const docRef = doc(db, "medical_insurance", currentBooking.id);
-            await updateDoc(docRef, dataToUpdate);
-            toast.success("Record updated successfully!");
-            setEditModalOpen(false);
-        } catch (error) {
-            console.error("Error updating document: ", error);
-            toast.error("Failed to update record. Please try again.");
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
 
     return (
         <div className="relative min-h-screen bg-black overflow-hidden font-sans text-gray-100 p-8">
@@ -286,21 +317,21 @@ export default function ViewAllMedicalBookings() {
                             <h3 className="text-xl font-semibold">Total Received</h3>
                             <FaDollarSign className="text-3xl opacity-50" />
                         </div>
-                        <p className="mt-2 text-4xl font-bold">${totalReceived.toFixed(2)}</p>
+                        <p className="mt-2 text-4xl font-bold">{totalReceived.toFixed(2)}</p>
                     </div>
                     <div className="bg-gradient-to-br from-red-800 to-pink-800 rounded-xl p-6 text-white shadow-lg border border-pink-700">
                         <div className="flex items-center justify-between">
                             <h3 className="text-xl font-semibold">Total Payable</h3>
                             <FaDollarSign className="text-3xl opacity-50" />
                         </div>
-                        <p className="mt-2 text-4xl font-bold">${totalPayable.toFixed(2)}</p>
+                        <p className="mt-2 text-4xl font-bold">{totalPayable.toFixed(2)}</p>
                     </div>
                     <div className="bg-gradient-to-br from-green-800 to-teal-800 rounded-xl p-6 text-white shadow-lg border border-teal-700">
                         <div className="flex items-center justify-between">
                             <h3 className="text-xl font-semibold">Total Profit</h3>
                             <FaDollarSign className="text-3xl opacity-50" />
                         </div>
-                        <p className="mt-2 text-4xl font-bold">${totalProfit.toFixed(2)}</p>
+                        <p className="mt-2 text-4xl font-bold">{totalProfit.toFixed(2)}</p>
                     </div>
                 </div>
 
@@ -310,7 +341,7 @@ export default function ViewAllMedicalBookings() {
                         <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Search by name or passport..."
+                            placeholder="Search by name, company, passport..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-12 pr-4 py-2 rounded-lg bg-gray-800/50 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -360,7 +391,7 @@ export default function ViewAllMedicalBookings() {
                             <table className="min-w-full divide-y divide-gray-700 table-auto">
                                 <thead className="bg-gray-800/50">
                                     <tr>
-                                        {['Company', 'Insured Name', 'Passport No.', 'Travel Country', 'Age', 'Contact No.', 'Days', 'Effective Date', 'Expiry Date', 'Rec. Amount', 'Pay. Amount', 'Profit', 'Actions'].map(header => (
+                                        {['#', 'Company', 'Insured Name', 'Passport No.', 'Travel Country', 'Contact No.',  'Rec. Amount', 'Pay. Amount', 'Profit', 'Actions'].map(header => (
                                             <th key={header} className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                                                 {header}
                                             </th>
@@ -368,30 +399,27 @@ export default function ViewAllMedicalBookings() {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-transparent divide-y divide-gray-700">
-                                    {filteredBookings.map((booking) => (
+                                    {filteredBookings.map((booking,index) => (
                                         <tr key={booking.id} className="hover:bg-white/10 transition-colors duration-200">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{index + 1}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{booking.NameofCompany}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{booking.NameofInsured}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{booking.passportNumber}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{booking.countryofTravel}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{booking.age}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{booking.contactNumber}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{booking.noOfdays}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{booking.EffectiveDate}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{booking.ExpiryDate}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-teal-400">${booking.totalReceivedAmount.toFixed(2)}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-red-400">${booking.totalPayableAmount.toFixed(2)}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-green-400">${booking.totalProfit.toFixed(2)}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-teal-400">{Number(booking.totalReceivedAmount).toFixed(2)}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-red-400">{Number(booking.totalPayableAmount).toFixed(2)}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-green-400">{Number(booking.totalProfit).toFixed(2)}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 <div className="flex space-x-2">
+                                                    <button onClick={() => handleViewClick(booking)} className="text-purple-400 hover:text-purple-300 transition-colors p-2 rounded-full hover:bg-white/10" aria-label="View details">
+                                                        <FaEye />
+                                                    </button>
                                                     <button onClick={() => handleEditClick(booking)} className="text-blue-400 hover:text-blue-300 transition-colors p-2 rounded-full hover:bg-white/10" aria-label="Edit booking">
                                                         <FaEdit />
                                                     </button>
-                                                    <button onClick={() => handleDeleteBooking(booking.id)} className="text-red-400 hover:text-red-300 transition-colors p-2 rounded-full hover:bg-white/10" aria-label="Delete booking">
-                                                        <FaTrash />
-                                                    </button>
                                                     <button onClick={() => generatePDF(booking)} className="text-teal-400 hover:text-teal-300 transition-colors p-2 rounded-full hover:bg-white/10" aria-label="Print as PDF">
-                                                         <FaFilePdf />
+                                                        <FaFilePdf />
                                                     </button>
                                                 </div>
                                             </td>
@@ -403,6 +431,13 @@ export default function ViewAllMedicalBookings() {
                     )}
                 </div>
             </div>
+            {viewModalOpen && (
+                <ViewModal
+                    booking={currentBooking}
+                    formFields={formFields}
+                    onClose={() => setViewModalOpen(false)}
+                />
+            )}
             {editModalOpen && (
                 <EditModal
                     booking={currentBooking}
