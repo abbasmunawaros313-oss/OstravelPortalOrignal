@@ -78,6 +78,9 @@ function HotelBookings() {
         profit: Number(formData.received) - Number(formData.payable),
         nightsStayed: Number(formData.nightsStayed),
         createdAt: serverTimestamp(),
+        createdByUid: user.uid,        // ✅ who created it
+        userEmail: user.email,         // ✅ store email
+       
       });
       toast.success("Hotel booking added successfully!");
       setFormData({
