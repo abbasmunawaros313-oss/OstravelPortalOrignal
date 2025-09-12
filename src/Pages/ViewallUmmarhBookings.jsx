@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
-import { collection, onSnapshot, query, orderBy, doc, updateDoc } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, doc, updateDoc, where } from "firebase/firestore";
 import { FaSpinner, FaEdit, FaSave, FaDownload, FaTimes, FaSearch } from "react-icons/fa";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import toast from "react-hot-toast";
 import Footer from "../Components/Footer";
+import { useAuth } from "../context/AuthContext";
 
 function ViewallUmmarhBookings() {
   const [bookings, setBookings] = useState([]);
@@ -16,10 +17,12 @@ function ViewallUmmarhBookings() {
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
   const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     const q = query(
       collection(db, "ummrahBookings"),
+      where("createdByUid", "==", user.uid),
       orderBy("createdAt", "desc")
     );
     const unsub = onSnapshot(q, (snapshot) => {
