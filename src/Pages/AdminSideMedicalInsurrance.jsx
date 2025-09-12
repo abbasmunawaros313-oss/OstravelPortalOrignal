@@ -366,21 +366,21 @@ export default function AdminSideMedicalInsurrance() {
                             <h3 className="text-xl font-semibold">Total Received</h3>
                             <FaDollarSign className="text-3xl opacity-50" />
                         </div>
-                        <p className="mt-2 text-4xl font-bold">${totalReceived.toFixed(2)}</p>
+                        <p className="mt-2 text-4xl font-bold">{totalReceived.toFixed(2)}</p>
                     </div>
                     <div className="bg-gradient-to-br from-red-800 to-pink-800 rounded-xl p-6 text-white shadow-lg border border-pink-700">
                         <div className="flex items-center justify-between">
                             <h3 className="text-xl font-semibold">Total Payable</h3>
                             <FaDollarSign className="text-3xl opacity-50" />
                         </div>
-                        <p className="mt-2 text-4xl font-bold">${totalPayable.toFixed(2)}</p>
+                        <p className="mt-2 text-4xl font-bold">{totalPayable.toFixed(2)}</p>
                     </div>
                     <div className="bg-gradient-to-br from-green-800 to-teal-800 rounded-xl p-6 text-white shadow-lg border border-teal-700">
                         <div className="flex items-center justify-between">
                             <h3 className="text-xl font-semibold">Total Profit</h3>
                             <FaDollarSign className="text-3xl opacity-50" />
                         </div>
-                        <p className="mt-2 text-4xl font-bold">${totalProfit.toFixed(2)}</p>
+                        <p className="mt-2 text-4xl font-bold">{totalProfit.toFixed(2)}</p>
                     </div>
                 </div>
 
