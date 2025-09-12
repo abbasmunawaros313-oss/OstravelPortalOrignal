@@ -25,6 +25,8 @@ import ViewallUmmarhBookings from "./Pages/ViewallUmmarhBookings";
 import HotelBookings from "./Pages/HotelBookings";
 import ViewAllHotelBookings from "./Pages/ViewAllhotelbookings";
 import HoetlDetAdminSide from "./Pages/HoetlDetAdminSide";
+import MedicalInsurence from "./Pages/MedicalInsurence";
+import ViewAllMedicalBookings from "./Pages/ViewAllMedicalBookings";
 
 // 🔒 Protected Route
 const ProtectedRoute = ({ children }) => {
@@ -215,6 +217,22 @@ function UserRoutes({ user }) {
         element={
           <ProtectedRoute>
             <ViewAllHotelBookings/>
+          </ProtectedRoute>
+        }
+       />
+       <Route
+        path="/medical-insurance"
+        element={
+          <ProtectedRoute>
+            <MedicalInsurence/>
+          </ProtectedRoute>
+        }
+       />
+       <Route
+        path="/viewAllmedBookings"
+        element={
+          <ProtectedRoute>
+            <ViewAllMedicalBookings/>
           </ProtectedRoute>
         }
        />
