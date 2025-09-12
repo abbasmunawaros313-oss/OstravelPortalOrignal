@@ -5,8 +5,10 @@ import toast from "react-hot-toast";
 import { FaPlus, FaSpinner, FaEye, FaIdCard, FaUser, FaBuilding, FaBed, FaMale, FaChild, FaCalendarDay, FaCreditCard, FaDollarSign, FaMoneyBillWave, FaEdit } from "react-icons/fa";
 import Footer from "../Components/Footer";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 function HotelBookings() {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     bookingId: "",
     clientName: "",
