@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { db } from "../firebase";
-import { collection, onSnapshot, doc, updateDoc } from "firebase/firestore";
+import { collection, onSnapshot, doc, updateDoc ,query, where} from "firebase/firestore";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
+
 
 // Correct import for jspdf-autotable
 import { jsPDF } from "jspdf";
@@ -14,6 +16,7 @@ import { BiCalculator } from "react-icons/bi";
 
 
 export default function ViewAllMedicalBookings() {
+    const { user } = useAuth();
     const [bookings, setBookings] = useState([]);
     const [filteredBookings, setFilteredBookings] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -44,8 +47,10 @@ export default function ViewAllMedicalBookings() {
 
     // Fetch data from Firestore
     useEffect(() => {
+
         const bookingsCollection = collection(db, "medical_insurance");
-        const unsubscribe = onSnapshot(bookingsCollection, (snapshot) => {
+        const q = query(bookingsCollection, where("userEmail", "==", user.email));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
