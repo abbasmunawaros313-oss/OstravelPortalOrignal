@@ -251,6 +251,7 @@ function HoetlDetAdminSide() {
                 <th className="p-3">Booking Details</th>
                 <th className="p-3">Client</th>
                 <th className="p-3">Financials</th>
+                <th className="p-3 text-center">Emplyee</th>
                 <th className="p-3 text-center">Actions</th>
               </tr>
             </thead>
@@ -289,6 +290,7 @@ function HoetlDetAdminSide() {
                         <FaDollarSign /> PKR {b.profit}
                       </div>
                     </td>
+                    <td className="p-3 text-center text-gray-700">{b.userEmail || "N/A"}</td>
                     <td className="p-3 flex gap-3 justify-center">
                       <button
                         onClick={() => handleEdit(b)}
