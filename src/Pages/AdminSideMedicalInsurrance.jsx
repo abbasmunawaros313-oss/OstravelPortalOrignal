@@ -155,9 +155,9 @@ export default function AdminSideMedicalInsurrance() {
             ["Effective Date", booking.EffectiveDate || "N/A"],
             ["Expiry Date", booking.ExpiryDate || "N/A"],
             ["Issued At", booking.IssuedAt || "N/A"],
-            ["Total Received Amount", `$${Number(booking.totalReceivedAmount || 0).toFixed(2)}`],
-            ["Total Payable Amount", `$${Number(booking.totalPayableAmount || 0).toFixed(2)}`],
-            ["Total Profit", `$${Number(booking.totalProfit || 0).toFixed(2)}`],
+            ["Total Received Amount", `${Number(booking.totalReceivedAmount || 0).toFixed(2)}`],
+            ["Total Payable Amount", `${Number(booking.totalPayableAmount || 0).toFixed(2)}`],
+            ["Total Profit", `${Number(booking.totalProfit || 0).toFixed(2)}`],
             ["Created At", booking.createdAt?.toDate?.().toLocaleString?.() || "N/A"],
             ["Created By", booking.userEmail || "N/A"],
         ];
@@ -514,9 +514,9 @@ export default function AdminSideMedicalInsurrance() {
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{booking.NameofInsured}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{booking.passportNumber}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{booking.countryofTravel}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-teal-400">${Number(booking.totalReceivedAmount).toFixed(2)}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-red-400">${Number(booking.totalPayableAmount).toFixed(2)}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-green-400">${Number(booking.totalProfit).toFixed(2)}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-teal-400">{Number(booking.totalReceivedAmount).toFixed(2)}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-red-400">{Number(booking.totalPayableAmount).toFixed(2)}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-green-400">{Number(booking.totalProfit).toFixed(2)}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 <div className="flex space-x-2">
                                                     <button onClick={() => handleViewClick(booking)} className="text-purple-400 hover:text-purple-300 transition-colors p-2 rounded-full hover:bg-white/10" aria-label="View details">
