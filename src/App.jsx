@@ -27,6 +27,7 @@ import ViewAllHotelBookings from "./Pages/ViewAllhotelbookings";
 import HoetlDetAdminSide from "./Pages/HoetlDetAdminSide";
 import MedicalInsurence from "./Pages/MedicalInsurence";
 import ViewAllMedicalBookings from "./Pages/ViewAllMedicalBookings";
+import AdminSideMedicalInsurrance from "./Pages/AdminSideMedicalInsurrance";
 
 // 🔒 Protected Route
 const ProtectedRoute = ({ children }) => {
@@ -90,6 +91,14 @@ function AdminRoutes() {
         }
       
       />
+        <Route
+        path="/medicalInsurancedet"
+        element={
+          <ProtectedRoute>
+            <AdminSideMedicalInsurrance/>
+          </ProtectedRoute>
+        }
+        />
       {/* ✅ fallback for admin */}
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
     </Routes>
