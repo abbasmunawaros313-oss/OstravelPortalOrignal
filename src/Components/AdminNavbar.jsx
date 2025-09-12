@@ -8,7 +8,7 @@ function AdminNavbar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <nav className="backdrop-blur-lg bg-white/20 border-b border-white shadow-lg sticky top-0 z-50">
+    <nav className="backdrop-blur-lg bg-white border-b border-white/30 shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center gap-2">
