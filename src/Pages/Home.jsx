@@ -82,20 +82,20 @@ const services = [
     color: "from-purple-500 to-indigo-500",
   },
   {
-    title: "Travel Recommendations",
+    title: "Medical Insurance",
     description: "Get personalized tips for your trips and destinations.",
-    to: "#",
+    to: "/medical-insurance",
     icon: <MdMap className="text-pink-500" />,
     color: "from-pink-500 to-rose-500",
   },
 ];
 
 export default function Home() {
-  const { user } = useAuth();
+
 
   return (
     <div className="bg-gray-950 text-gray-200 min-h-screen font-sans">
-      {/* Hero Section */}
+     
       
      
 
@@ -191,33 +191,7 @@ export default function Home() {
       <Footer />
 
       {/* Custom Tailwind Animations */}
-      <style jsx>{`
-        .bg-travel-pattern {
-          background-image: url('https://images.unsplash.com/photo-1542157053-1574cc406450?q=80&w=1974&auto=format&fit=crop');
-          background-position: center;
-          background-size: cover;
-        }
-
-        .animate-fade-in-up {
-          animation: fade-in-up 1s ease-out forwards;
-        }
-        @keyframes fade-in-up {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        .animate-pulse-slow {
-          animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        @keyframes pulse-slow {
-          0%, 100% {
-            text-shadow: 0 0 5px rgba(255,255,255,0.4);
-          }
-          50% {
-            text-shadow: 0 0 15px rgba(255,255,255,0.8);
-          }
-        }
-      `}</style>
+      
     </div>
   );
 }
