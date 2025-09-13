@@ -351,9 +351,9 @@ export default function AdminTicketDashboard() {
     docPDF.setFontSize(10);
     docPDF.text(sub, 14, 21);
     docPDF.text(
-      `Totals — Bookings: ${totals.bookings} | Earnings: $${moneyFmt(totals.earnings)} | Payable: $${moneyFmt(
+      `Totals — Bookings: ${totals.bookings} | Earnings: ${moneyFmt(totals.earnings)} | Payable: ${moneyFmt(
         totals.payable
-      )} | Profit: $${moneyFmt(totals.profit)}`,
+      )} | Profit: ${moneyFmt(totals.profit)}`,
       14,
       27
     );
@@ -492,7 +492,7 @@ export default function AdminTicketDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm text-blue-200 font-semibold uppercase">Earnings</div>
-                <div className="mt-2 text-2xl font-extrabold">${moneyFmt(totals.earnings)}</div>
+                <div className="mt-2 text-2xl font-extrabold">{moneyFmt(totals.earnings)}</div>
               </div>
               <div className="p-3 rounded-full bg-white/5 text-blue-200">
                 <FaDollarSign />
@@ -505,7 +505,7 @@ export default function AdminTicketDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm text-amber-100 font-semibold uppercase">Payable</div>
-                <div className="mt-2 text-2xl font-extrabold">${moneyFmt(totals.payable)}</div>
+                <div className="mt-2 text-2xl font-extrabold">{moneyFmt(totals.payable)}</div>
               </div>
               <div className="p-3 rounded-full bg-white/5 text-amber-200">
                 <FaCreditCard />
@@ -518,7 +518,7 @@ export default function AdminTicketDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm text-green-200 font-semibold uppercase">Profit</div>
-                <div className="mt-2 text-2xl font-extrabold">${moneyFmt(totals.profit)}</div>
+                <div className="mt-2 text-2xl font-extrabold">{moneyFmt(totals.profit)}</div>
               </div>
               <div className="p-3 rounded-full bg-white/5 text-green-200">
                 <FaChartLine />
@@ -594,9 +594,9 @@ export default function AdminTicketDashboard() {
                     >
                       <td className="px-4 py-3 text-gray-200 font-medium">{emp.name}</td>
                       <td className="px-4 py-3 text-purple-300 font-semibold">{emp.bookings}</td>
-                      <td className="px-4 py-3 text-blue-300 font-semibold">${moneyFmt(emp.earnings)}</td>
-                      <td className="px-4 py-3 text-amber-300 font-semibold">${moneyFmt(emp.payable)}</td>
-                      <td className="px-4 py-3 text-green-300 font-bold">${moneyFmt(emp.profit)}</td>
+                      <td className="px-4 py-3 text-blue-300 font-semibold">{moneyFmt(emp.earnings)}</td>
+                      <td className="px-4 py-3 text-amber-300 font-semibold">{moneyFmt(emp.payable)}</td>
+                      <td className="px-4 py-3 text-green-300 font-bold">{moneyFmt(emp.profit)}</td>
                       <td className="px-4 py-3">
                         <MiniBar value={emp.earnings} max={employeeListSorted.maxEarnings || emp.earnings || 1} />
                       </td>
@@ -647,9 +647,9 @@ export default function AdminTicketDashboard() {
                       <td className="px-4 py-3 font-medium text-gray-50">{b.passenger?.fullName || "-"}</td>
                       <td className="px-4 py-3 text-gray-300">{b.createdByEmail || b.createdByName || "-"}</td>
                       <td className="px-4 py-3 text-gray-300">{(b.from || "-") + " → " + (b.to || "-")}</td>
-                      <td className="px-4 py-3 text-blue-400 font-medium">${moneyFmt(b.price)}</td>
-                      <td className="px-4 py-3 text-amber-400 font-medium">${moneyFmt(b.payable)}</td>
-                      <td className="px-4 py-3 text-green-400 font-bold">${moneyFmt(b.profit)}</td>
+                      <td className="px-4 py-3 text-blue-400 font-medium">{moneyFmt(b.price)}</td>
+                      <td className="px-4 py-3 text-amber-400 font-medium">{moneyFmt(b.payable)}</td>
+                      <td className="px-4 py-3 text-green-400 font-bold">{moneyFmt(b.profit)}</td>
                       <td className="px-4 py-3 text-gray-300">{b.status || "-"}</td>
                       <td className="px-4 py-3 text-gray-300">{b.createdAt ? new Date(b.createdAt).toLocaleDateString() : "-"}</td>
                       <td className="px-4 py-3">
@@ -709,15 +709,15 @@ export default function AdminTicketDashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="bg-gray-700 p-3 rounded-md">
                   <div className="text-xs text-gray-400">Price (Earnings)</div>
-                  <div className="font-medium mt-1 text-blue-300">${moneyFmt(viewing.price)}</div>
+                  <div className="font-medium mt-1 text-blue-300">{moneyFmt(viewing.price)}</div>
                 </div>
                 <div className="bg-gray-700 p-3 rounded-md">
                   <div className="text-xs text-gray-400">Payable</div>
-                  <div className="font-medium mt-1 text-amber-300">${moneyFmt(viewing.payable)}</div>
+                  <div className="font-medium mt-1 text-amber-300">{moneyFmt(viewing.payable)}</div>
                 </div>
                 <div className="bg-gray-700 p-3 rounded-md">
                   <div className="text-xs text-gray-400">Profit</div>
-                  <div className="font-medium mt-1 text-green-300">${moneyFmt(viewing.profit)}</div>
+                  <div className="font-medium mt-1 text-green-300">{moneyFmt(viewing.profit)}</div>
                 </div>
                 <div className="bg-gray-700 p-3 rounded-md">
                   <div className="text-xs text-gray-400">Passengers</div>
