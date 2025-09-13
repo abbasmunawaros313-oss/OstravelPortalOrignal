@@ -200,10 +200,10 @@ export default function UmmrahBookingDet() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="p-6 rounded-2xl shadow-lg bg-gray-800 border border-gray-700 transition-transform duration-200 hover:scale-[1.02]">
+                    <div className="p-6 rounded-2xl shadow-lg bg-green-900 border border-gray-700 transition-transform duration-200 hover:scale-[1.02]">
                         <div className="flex items-center justify-between">
                             <h3 className="text-sm font-semibold text-gray-400 uppercase">Total Received</h3>
-                            <div className="p-2 rounded-full bg-green-900 text-green-400">
+                            <div className="p-2 rounded-full bg-gray-900 text-green-400">
                                 <FaMoneyBillWave size={20} />
                             </div>
                         </div>
@@ -224,8 +224,8 @@ export default function UmmrahBookingDet() {
                         </p>
                     </div>
 
-                    <div className="p-6 rounded-2xl shadow-lg bg-gray-800 border border-gray-700 transition-transform duration-200 hover:scale-[1.02]">
-                        <div className="flex items-center justify-between">
+                    <div className="p-6 rounded-2xl shadow-lg bg-yellow-700 border border-gray-700 transition-transform duration-200 hover:scale-[1.02]">
+                        <div className="flex items-center justify-between ">
                             <h3 className="text-sm font-semibold text-gray-400 uppercase">Profit</h3>
                             <div className="p-2 rounded-full bg-blue-900 text-blue-400">
                                 <FaChartLine size={20} />
@@ -563,7 +563,7 @@ export default function UmmrahBookingDet() {
                         </div>
                     </div>
                 )}
-            </Modal>
+            </Modal>\
         </div>
     );
 }
