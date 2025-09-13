@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { db } from "../firebase";
-import { collection, onSnapshot, doc, updateDoc, query, where, orderBy } from "firebase/firestore";
+import { collection, onSnapshot, doc, updateDoc, query, where, orderBy , deleteDoc} from "firebase/firestore";
 import toast from "react-hot-toast";
 
 // Correct import for jspdf-autotable
