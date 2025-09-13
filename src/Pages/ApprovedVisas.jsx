@@ -11,7 +11,21 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
-import { FaEdit, FaSave, FaTimes, FaSpinner, FaSearch, FaPassport, FaUser, FaGlobeAmericas, FaPlane, FaCalendarAlt, FaMoneyBillWave, FaIdCard } from "react-icons/fa";
+import {
+  FaEdit,
+  FaSave,
+  FaTimes,
+  FaSpinner,
+  FaSearch,
+  FaPassport,
+  FaUser,
+  FaGlobeAmericas,
+  FaPlane,
+  FaCalendarAlt,
+  FaMoneyBillWave,
+  FaIdCard,
+  FaEye,
+} from "react-icons/fa";
 import Footer from "../Components/Footer";
 import { useNavigate } from "react-router-dom";
 
@@ -25,6 +39,7 @@ export default function ApprovedVisas() {
   const [searchTerm, setSearchTerm] = useState("");
   const [editing, setEditing] = useState(null);
   const [editData, setEditData] = useState({});
+  const [viewing, setViewing] = useState(null); // New state for viewing details
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -34,8 +49,6 @@ export default function ApprovedVisas() {
       return;
     }
 
-    // The query is now simplified to just fetch bookings for the current user.
-    // Sorting will be done on the client side to avoid the composite index requirement.
     const q = query(
       collection(db, "bookings"),
       where("userId", "==", user.uid)
@@ -49,7 +62,6 @@ export default function ApprovedVisas() {
           ...doc.data(),
         }));
 
-        // Client-side sorting by date in descending order
         const sortedData = raw.sort((a, b) => {
           const dateA = a.date ? new Date(a.date).getTime() : 0;
           const dateB = b.date ? new Date(b.date).getTime() : 0;
@@ -81,12 +93,10 @@ export default function ApprovedVisas() {
   useEffect(() => {
     let data = [...bookings];
 
-    // Filter by visa status
     if (filter !== "All") {
       data = data.filter((booking) => booking.visaStatus === filter);
     }
 
-    // Filter by date
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     let startDate;
@@ -113,7 +123,7 @@ export default function ApprovedVisas() {
     }
 
     if (startDate) {
-      data = data.filter(booking => {
+      data = data.filter((booking) => {
         if (!booking.date) return false;
         const bookingDate = new Date(booking.date);
         bookingDate.setHours(0, 0, 0, 0);
@@ -121,7 +131,6 @@ export default function ApprovedVisas() {
       });
     }
 
-    // Filter by search term
     if (searchTerm.trim() !== "") {
       const lowerCaseSearchTerm = searchTerm.toLowerCase();
       data = data.filter(
@@ -166,23 +175,47 @@ export default function ApprovedVisas() {
       }
 
       const updateData = {
-        passport: typeof editData.passport === 'string' ? editData.passport.trim() : editData.passport || "",
-        fullName: typeof editData.fullName === 'string' ? editData.fullName.trim() : editData.fullName || "",
-        visaType: typeof editData.visaType === 'string' ? editData.visaType.trim() : editData.visaType || "",
-        country: typeof editData.country === 'string' ? editData.country.trim() : editData.country || "",
+        passport:
+          typeof editData.passport === "string"
+            ? editData.passport.trim()
+            : editData.passport || "",
+        fullName:
+          typeof editData.fullName === "string"
+            ? editData.fullName.trim()
+            : editData.fullName || "",
+        visaType:
+          typeof editData.visaType === "string"
+            ? editData.visaType.trim()
+            : editData.visaType || "",
+        country:
+          typeof editData.country === "string"
+            ? editData.country.trim()
+            : editData.country || "",
         date: editData.date || "",
         totalFee: editData.totalFee || "",
         receivedFee: editData.receivedFee || "",
         remainingFee: editData.remainingFee || "",
         paymentStatus: editData.paymentStatus || "",
         visaStatus: editData.visaStatus || "",
-        embassyFee: typeof editData.reference === 'string' ? editData.reference.trim() : editData.reference || "",
-        sentToEmbassy: typeof editData.sentToEmbessy === 'string' ? editData.sentToEmbessy.trim() : editData.sentToEmbessy || "",
-        receiveFromEmbassy: typeof editData.reciveFromEmbessy === 'string' ? editData.reciveFromEmbessy.trim() : editData.reciveFromEmbessy || "",
+        embassyFee:
+          typeof editData.reference === "string"
+            ? editData.reference.trim()
+            : editData.reference || "",
+        sentToEmbassy:
+          typeof editData.sentToEmbessy === "string"
+            ? editData.sentToEmbessy.trim()
+            : editData.sentToEmbessy || "",
+        receiveFromEmbassy:
+          typeof editData.reciveFromEmbessy === "string"
+            ? editData.reciveFromEmbessy.trim()
+            : editData.reciveFromEmbessy || "",
       };
 
       if (editData.visaType === "Appointment") {
-        updateData.vendorContact = typeof editData.vendorContact === 'string' ? editData.vendorContact.trim() : editData.vendorContact || "";
+        updateData.vendorContact =
+          typeof editData.vendorContact === "string"
+            ? editData.vendorContact.trim()
+            : editData.vendorContact || "";
         updateData.vendorFee = editData.vendorFee || "";
       } else {
         delete updateData.vendorContact;
@@ -205,6 +238,14 @@ export default function ApprovedVisas() {
   const cancelEdit = () => {
     setEditing(null);
     setEditData({});
+  };
+
+  const viewDetails = (booking) => {
+    setViewing(booking);
+  };
+
+  const closeView = () => {
+    setViewing(null);
   };
 
   const getStatusColor = (status) => {
@@ -330,7 +371,13 @@ export default function ApprovedVisas() {
                       <div className="text-gray-300">Vendor Contact: {b.vendorContact || "-"}</div>
                       <div className="text-gray-300">Vendor Fee: {b.vendorFee || "-"}</div>
                     </td>
-                    <td className="px-4 py-4 align-top">
+                    <td className="px-4 py-4 align-top flex flex-col sm:flex-row gap-2">
+                      <button
+                        onClick={() => viewDetails(b)}
+                        className="bg-purple-600 text-white px-3 py-1 rounded-lg flex items-center gap-2 hover:bg-purple-700 transition-colors"
+                      >
+                        <FaEye /> View
+                      </button>
                       <button
                         onClick={() => startEdit(b)}
                         className="bg-blue-600 text-white px-3 py-1 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors"
@@ -565,7 +612,6 @@ export default function ApprovedVisas() {
                 </>
               )}
             </div>
-
             <div className="mt-8 flex justify-end gap-4">
               <button
                 onClick={cancelEdit}
@@ -588,6 +634,137 @@ export default function ApprovedVisas() {
                     <FaSave /> Save Changes
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Modal */}
+      {viewing && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-gray-900 rounded-xl shadow-2xl border border-gray-800 p-8 w-full max-w-2xl relative my-8">
+            <button
+              onClick={closeView}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            >
+              <FaTimes size={24} />
+            </button>
+            <h2 className="text-2xl font-bold text-white mb-6">Visa Record Details</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Personal Details */}
+              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                <h3 className="text-lg font-semibold text-white mb-2">Personal Details</h3>
+                <p className="text-sm">
+                  <b className="text-gray-400">Full Name:</b>{" "}
+                  <span className="text-white">{viewing.fullName}</span>
+                </p>
+                <p className="text-sm">
+                  <b className="text-gray-400">Passport Number:</b>{" "}
+                  <span className="text-white">{viewing.passport}</span>
+                </p>
+                <p className="text-sm">
+                  <b className="text-gray-400">Expiry Date:</b>{" "}
+                  <span className="text-white">{viewing.expiryDate || "-"}</span>
+                </p>
+                <p className="text-sm">
+                  <b className="text-gray-400">Email:</b>{" "}
+                  <span className="text-white">{viewing.email || "-"}</span>
+                </p>
+                <p className="text-sm">
+                  <b className="text-gray-400">Phone:</b>{" "}
+                  <span className="text-white">{viewing.phone || "-"}</span>
+                </p>
+              </div>
+
+              {/* Visa & Travel Details */}
+              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                <h3 className="text-lg font-semibold text-white mb-2">Visa & Travel</h3>
+                <p className="text-sm">
+                  <b className="text-gray-400">Country:</b>{" "}
+                  <span className="text-white">{viewing.country}</span>
+                </p>
+                <p className="text-sm">
+                  <b className="text-gray-400">Visa Type:</b>{" "}
+                  <span className="text-white">{viewing.visaType}</span>
+                </p>
+                <p className="text-sm">
+                  <b className="text-gray-400">Visa Status:</b>{" "}
+                  <span className={`px-2 py-0.5 text-xs font-semibold rounded-full text-white ${getStatusColor(viewing.visaStatus)}`}>
+                    {viewing.visaStatus}
+                  </span>
+                </p>
+                <p className="text-sm">
+                  <b className="text-gray-400">Application Date:</b>{" "}
+                  <span className="text-white">{viewing.date}</span>
+                </p>
+                <p className="text-sm">
+                  <b className="text-gray-400">Remarks:</b>{" "}
+                  <span className="text-white">{viewing.remarks || "-"}</span>
+                </p>
+              </div>
+
+              {/* Financials */}
+              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                <h3 className="text-lg font-semibold text-white mb-2">Financials</h3>
+                <p className="text-sm">
+                  <b className="text-gray-400">Total Fee:</b>{" "}
+                  <span className="text-green-400">{viewing.totalFee}</span>
+                </p>
+                <p className="text-sm">
+                  <b className="text-gray-400">Received Fee:</b>{" "}
+                  <span className="text-blue-400">{viewing.receivedFee}</span>
+                </p>
+                <p className="text-sm">
+                  <b className="text-gray-400">Remaining Fee:</b>{" "}
+                  <span className="text-red-400">{viewing.remainingFee}</span>
+                </p>
+                <p className="text-sm">
+                  <b className="text-gray-400">Payment Status:</b>{" "}
+                  <span className="text-white">{viewing.paymentStatus}</span>
+                </p>
+              </div>
+
+              {/* Embassy & Vendor Info */}
+              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                <h3 className="text-lg font-semibold text-white mb-2">Embassy & Vendor</h3>
+                <p className="text-sm">
+                  <b className="text-gray-400">Embassy Fee:</b>{" "}
+                  <span className="text-white">{viewing.embassyFee || "-"}</span>
+                </p>
+                <p className="text-sm">
+                  <b className="text-gray-400">Reference:</b>{" "}
+                  <span className="text-white">{viewing.reference || "-"}</span>
+                </p>
+                <p className="text-sm">
+                  <b className="text-gray-400">Sent to Embassy:</b>{" "}
+                  <span className="text-white">{viewing.sentToEmbassy || "-"}</span>
+                </p>
+                <p className="text-sm">
+                  <b className="text-gray-400">Received from Embassy:</b>{" "}
+                  <span className="text-white">{viewing.receiveFromEmbassy || "-"}</span>
+                </p>
+                <p className="text-sm">
+                  <b className="text-gray-400">Vendor:</b>{" "}
+                  <span className="text-white">{viewing.vendor || "-"}</span>
+                </p>
+                <p className="text-sm">
+                  <b className="text-gray-400">Vendor Contact:</b>{" "}
+                  <span className="text-white">{viewing.vendorContact || "-"}</span>
+                </p>
+                <p className="text-sm">
+                  <b className="text-gray-400">Vendor Fee:</b>{" "}
+                  <span className="text-white">{viewing.vendorFee || "-"}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-end">
+              <button
+                onClick={closeView}
+                className="px-6 py-3 bg-gray-700 text-white rounded-xl font-semibold hover:bg-gray-600 transition-colors"
+              >
+                Close
               </button>
             </div>
           </div>
