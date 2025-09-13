@@ -1,8 +1,6 @@
-// EmployeeRecord.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
-import { useRef } from "react";
 import {
   FaUserTie,
   FaSearch,
@@ -12,6 +10,7 @@ import {
   FaDownload,
   FaTimes,
   FaCalendarAlt,
+  FaChevronDown,
 } from "react-icons/fa";
 import AdminNavbar from "../Components/AdminNavbar";
 import Footer from "../Components/Footer";
@@ -22,7 +21,7 @@ import toast from "react-hot-toast";
  * - Single-file, production-ready Employee Records admin page.
  * - Fetches bookings, ticketBookings, ummrahBookings and groups by user email.
  * - Accordion, tabs (visa/ticket/umrah), date-range + search filtering,
- *   totals summary, grouping by date, export CSV.
+ * totals summary, grouping by date, export CSV.
  *
  * Styling note: uses Tailwind classes. Adjust to your design tokens if needed.
  */
@@ -106,14 +105,14 @@ export default function EmployeeRecord() {
   const [globalSearch, setGlobalSearch] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState(null); // email string
   const [showOnlyWithRecords, setShowOnlyWithRecords] = useState(false);
-  
-  const detailsRef = useRef(null); 
+  const detailsRef = useRef(null);
 
-    useEffect(() => {
+  useEffect(() => {
     if (selectedEmployee && detailsRef.current) {
       detailsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [selectedEmployee]);
+
   useEffect(() => {
     let mounted = true;
     const fetchAll = async () => {
@@ -126,17 +125,32 @@ export default function EmployeeRecord() {
           getDocs(collection(db, "ummrahBookings")),
         ]);
 
-        const visaData = visaSnap.docs.map((d) => ({ id: d.id, ...d.data(), __type: "visa" }));
-        const ticketData = ticketSnap.docs.map((d) => ({ id: d.id, ...d.data(), __type: "ticket" }));
-        const umrahData = umrahSnap.docs.map((d) => ({ id: d.id, ...d.data(), __type: "umrah" }));
+        const visaData = visaSnap.docs.map((d) => ({
+          id: d.id,
+          ...d.data(),
+          __type: "visa",
+        }));
+        const ticketData = ticketSnap.docs.map((d) => ({
+          id: d.id,
+          ...d.data(),
+          __type: "ticket",
+        }));
+        const umrahData = umrahSnap.docs.map((d) => ({
+          id: d.id,
+          ...d.data(),
+          __type: "umrah",
+        }));
 
         const all = [...visaData, ...ticketData, ...umrahData];
 
         // group by email (userEmail or createdByEmail)
         const grouped = {};
         for (const item of all) {
-          const email = (item.userEmail || item.createdByEmail || "unknown@os.com").toLowerCase();
-          if (!grouped[email]) grouped[email] = { visa: [], ticket: [], umrah: [] };
+          const email = (
+            item.userEmail || item.createdByEmail || "unknown@os.com"
+          ).toLowerCase();
+          if (!grouped[email])
+            grouped[email] = { visa: [], ticket: [], umrah: [] };
           if (item.__type === "visa") grouped[email].visa.push(item);
           else if (item.__type === "ticket") grouped[email].ticket.push(item);
           else grouped[email].umrah.push(item);
@@ -167,7 +181,12 @@ export default function EmployeeRecord() {
         ticket: (data.ticket || []).length,
         umrah: (data.umrah || []).length,
       };
-      return { email, data, counts, total: counts.visa + counts.ticket + counts.umrah };
+      return {
+        email,
+        data,
+        counts,
+        total: counts.visa + counts.ticket + counts.umrah,
+      };
     });
     arr.sort((a, b) => b.total - a.total || a.email.localeCompare(b.email));
     return arr;
@@ -183,25 +202,29 @@ export default function EmployeeRecord() {
   }, [employeeEntries, globalSearch, showOnlyWithRecords]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50 flex flex-col">
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
       <AdminNavbar />
 
       <main className="max-w-7xl w-full mx-auto p-6 flex-1">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-800">Employee Records</h1>
-            <p className="text-sm text-slate-600 mt-1">Overview of handlers & their bookings — Visa / Ticket / Umrah.</p>
+            <h1 className="text-3xl font-extrabold text-white">
+              Employee Records
+            </h1>
+            <p className="text-sm text-gray-400 mt-1">
+              Overview of handlers & their bookings — Visa / Ticket / Umrah.
+            </p>
           </div>
 
           <div className="flex gap-3 items-center w-full md:w-auto">
             <div className="relative w-full md:w-80">
-              <FaSearch className="absolute left-3 top-3 text-slate-400" />
+              <FaSearch className="absolute left-3 top-3.5 text-gray-500" />
               <input
                 value={globalSearch}
                 onChange={(e) => setGlobalSearch(e.target.value)}
                 placeholder="Search by employee email..."
-                className="w-full pl-10 pr-4 py-3 rounded-xl shadow-sm border border-slate-200 focus:border-emerald-300 outline-none"
+                className="w-full pl-10 pr-4 py-3 rounded-xl shadow-inner bg-gray-800 text-white border border-gray-700 focus:border-purple-500 outline-none transition"
               />
             </div>
 
@@ -209,7 +232,11 @@ export default function EmployeeRecord() {
               onClick={() => {
                 setShowOnlyWithRecords((s) => !s);
               }}
-              className={`px-4 py-2 rounded-xl text-sm font-medium shadow-sm transition ${showOnlyWithRecords ? "bg-emerald-600 text-white" : "bg-white border"}`}
+              className={`px-4 py-3 rounded-xl text-sm font-medium shadow-sm transition ${
+                showOnlyWithRecords
+                  ? "bg-purple-600 text-white transform hover:scale-105"
+                  : "bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 transform hover:scale-105"
+              }`}
               title="Toggle: show only employees with at least one record"
             >
               {showOnlyWithRecords ? "With records" : "All employees"}
@@ -221,34 +248,42 @@ export default function EmployeeRecord() {
         <TotalsRow employees={employeeEntries} />
 
         {/* Grid */}
-        <section className="mt-6">
+        <section className="mt-8 animate-fade-in-up">
           {loading ? (
-            <div className="text-center py-12 text-slate-500">Loading employees…</div>
+            <div className="text-center py-12 text-gray-500">
+              Loading employees…
+            </div>
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {filteredEmployees.length === 0 ? (
-                  <div className="col-span-full p-6 bg-white rounded-xl shadow text-center">
-                    <div className="text-slate-600">No employees found.</div>
+                  <div className="col-span-full p-6 bg-gray-800 rounded-xl shadow text-center">
+                    <div className="text-gray-400">No employees found.</div>
                   </div>
                 ) : (
-                  filteredEmployees.map(({ email, data, counts, total }) => (
-                    <EmployeeCard
-                      key={email}
-                      email={email}
-                      counts={counts}
-                      total={total}
-                      expanded={selectedEmployee === email}
-                      onToggle={() => setSelectedEmployee((prev) => (prev === email ? null : email))}
-                    />
-                  ))
+                  filteredEmployees.map(
+                    ({ email, data, counts, total }, index) => (
+                      <EmployeeCard
+                        key={email}
+                        email={email}
+                        counts={counts}
+                        total={total}
+                        expanded={selectedEmployee === email}
+                        onToggle={() =>
+                          setSelectedEmployee((prev) =>
+                            prev === email ? null : email
+                          )
+                        }
+                      />
+                    )
+                  )
                 )}
               </div>
 
               {/* Expanded details panel - render below grid */}
               {selectedEmployee && groupedByEmail[selectedEmployee] && (
                 <div ref={detailsRef} className="mt-8">
-                  <div className="bg-white rounded-2xl shadow-lg p-6">
+                  <div className="bg-gray-800 rounded-2xl shadow-lg p-6 animate-fade-in-up">
                     <EmployeeDetails
                       emp={groupedByEmail[selectedEmployee]}
                       email={selectedEmployee}
@@ -283,31 +318,41 @@ function TotalsRow({ employees = [] }) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <div className="bg-white rounded-xl p-4 shadow flex items-center justify-between">
+      <div className="bg-gray-800 rounded-xl p-6 shadow-lg flex items-center justify-between transform transition hover:scale-105">
         <div>
-          <div className="text-xs uppercase text-slate-500">Handlers</div>
-          <div className="text-2xl font-bold text-slate-800">{employees.length}</div>
-          <div className="text-sm text-slate-500">Total employees listed</div>
+          <div className="text-xs uppercase text-gray-400">Handlers</div>
+          <div className="text-3xl font-bold text-white mt-1">
+            {employees.length}
+          </div>
+          <div className="text-sm text-gray-500">Total employees listed</div>
         </div>
-        <div className="text-4xl text-emerald-600">👥</div>
+        <div className="text-4xl text-purple-400">👥</div>
       </div>
 
-      <div className="bg-white rounded-xl p-4 shadow flex items-center justify-between">
+      <div className="bg-gray-800 rounded-xl p-6 shadow-lg flex items-center justify-between transform transition hover:scale-105">
         <div>
-          <div className="text-xs uppercase text-slate-500">Bookings (all)</div>
-          <div className="text-2xl font-bold text-slate-800">{totals.visa + totals.ticket + totals.umrah}</div>
-          <div className="text-sm text-slate-500">{totals.visa} visas • {totals.ticket} tickets • {totals.umrah} umrah</div>
+          <div className="text-xs uppercase text-gray-400">Bookings (all)</div>
+          <div className="text-3xl font-bold text-white mt-1">
+            {totals.visa + totals.ticket + totals.umrah}
+          </div>
+          <div className="text-sm text-gray-500">
+            {totals.visa} visas • {totals.ticket} tickets • {totals.umrah} umrah
+          </div>
         </div>
-        <div className="text-4xl text-blue-500">📊</div>
+        <div className="text-4xl text-sky-400">📊</div>
       </div>
 
-      <div className="bg-white rounded-xl p-4 shadow flex items-center justify-between">
+      <div className="bg-gray-800 rounded-xl p-6 shadow-lg flex items-center justify-between transform transition hover:scale-105">
         <div>
-          <div className="text-xs uppercase text-slate-500">Active handlers</div>
-          <div className="text-2xl font-bold text-slate-800">{totals.handlers}</div>
-          <div className="text-sm text-slate-500">Have at least 1 booking</div>
+          <div className="text-xs uppercase text-gray-400">Active handlers</div>
+          <div className="text-3xl font-bold text-white mt-1">
+            {totals.handlers}
+          </div>
+          <div className="text-sm text-gray-500">
+            Have at least 1 booking
+          </div>
         </div>
-        <div className="text-4xl text-purple-500">⚡</div>
+        <div className="text-4xl text-pink-400">⚡</div>
       </div>
     </div>
   );
@@ -316,46 +361,57 @@ function TotalsRow({ employees = [] }) {
 /* ------------------------------- Employee Card ------------------------------- */
 
 function EmployeeCard({ email, counts = {}, total = 0, expanded = false, onToggle }) {
-  // color bullets
   return (
     <div
       onClick={onToggle}
-      className={`rounded-2xl p-5 cursor-pointer transform transition hover:scale-105 ${expanded ? "ring-4 ring-emerald-300 bg-gradient-to-br from-white to-emerald-50" : "bg-white shadow"} `}
+      className={`rounded-2xl p-6 cursor-pointer transform transition-all duration-300 ease-in-out ${
+        expanded
+          ? "ring-4 ring-purple-500 bg-gray-700"
+          : "bg-gray-800 shadow-md hover:shadow-xl hover:scale-105"
+      }`}
     >
       <div className="flex items-start gap-3">
-        <div className="w-14 h-14 rounded-lg bg-emerald-100 flex items-center justify-center text-2xl text-emerald-700">
+        <div className="w-14 h-14 rounded-lg bg-purple-900 flex items-center justify-center text-2xl text-purple-400">
           <FaUserTie />
         </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-3">
-            <div className="text-sm font-semibold truncate">{email}</div>
-            <div className="text-xs text-slate-500">{total} records</div>
+            <div className="text-md font-semibold truncate text-white">
+              {email}
+            </div>
+            <div className="text-xs text-gray-400">{total} records</div>
           </div>
 
-          <div className="mt-3 flex items-center gap-2 text-xs">
-            <div className="flex items-center gap-2 bg-blue-50 px-2 py-1 rounded-full">
-              <FaPassport className="text-blue-600" />
-              <div className="font-medium text-blue-700">{counts.visa}</div>
-              <div className="text-slate-400">Visas</div>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs">
+            <div className="flex items-center gap-2 bg-blue-900 px-2 py-1 rounded-full">
+              <FaPassport className="text-blue-400" />
+              <div className="font-medium text-blue-300">{counts.visa}</div>
+              <div className="text-gray-400">Visas</div>
             </div>
 
-            <div className="flex items-center gap-2 bg-purple-50 px-2 py-1 rounded-full">
-              <FaPlane className="text-purple-600" />
-              <div className="font-medium text-purple-700">{counts.ticket}</div>
-              <div className="text-slate-400">Tickets</div>
+            <div className="flex items-center gap-2 bg-purple-900 px-2 py-1 rounded-full">
+              <FaPlane className="text-purple-400" />
+              <div className="font-medium text-purple-300">{counts.ticket}</div>
+              <div className="text-gray-400">Tickets</div>
             </div>
 
-            <div className="flex items-center gap-2 bg-amber-50 px-2 py-1 rounded-full">
-              <FaKaaba className="text-amber-600" />
-              <div className="font-medium text-amber-700">{counts.umrah}</div>
-              <div className="text-slate-400">Umrah</div>
+            <div className="flex items-center gap-2 bg-amber-900 px-2 py-1 rounded-full">
+              <FaKaaba className="text-amber-400" />
+              <div className="font-medium text-amber-300">{counts.umrah}</div>
+              <div className="text-gray-400">Umrah</div>
             </div>
           </div>
 
           <div className="mt-4 flex items-center justify-between">
-            <div className="text-xs text-slate-500">Click to expand</div>
-            <div className="text-xs text-slate-400">{expanded ? "Open" : "Open"}</div>
+            <div className="text-xs text-gray-500">Click to expand</div>
+            <div
+              className={`text-sm transform transition-transform duration-300 ${
+                expanded ? "rotate-180 text-purple-400" : "text-gray-500"
+              }`}
+            >
+              <FaChevronDown />
+            </div>
           </div>
         </div>
       </div>
@@ -379,7 +435,6 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
     umrah: emp.umrah || [],
   };
 
-  // filtered records according to tab, local search and date range
   const filteredRecords = useMemo(() => {
     const list = lists[tab] || [];
     const q = localSearch.trim().toLowerCase();
@@ -425,15 +480,18 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
         const db = toISODate(b) || "";
         if (da === db) {
           // fallback timestamp compare if present
-          const ta = a.createdAt?.seconds || (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
-          const tb = b.createdAt?.seconds || (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
+          const ta =
+            a.createdAt?.seconds ||
+            (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
+          const tb =
+            b.createdAt?.seconds ||
+            (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
           return tb - ta;
         }
         return db.localeCompare(da);
       });
   }, [lists, tab, localSearch, startDate, endDate]);
 
-  // grouped by date: { "2025-09-08": [..], ... }
   const groupedByDate = useMemo(() => {
     const map = {};
     for (const item of lists[tab] || []) {
@@ -441,11 +499,9 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
       if (!map[dateStr]) map[dateStr] = [];
       map[dateStr].push(item);
     }
-    // convert to sorted array descending
     const arr = Object.entries(map)
       .map(([date, items]) => ({ date, items }))
       .sort((a, b) => {
-        // "No date" should come last
         if (a.date === "No date") return 1;
         if (b.date === "No date") return -1;
         return b.date.localeCompare(a.date);
@@ -453,18 +509,14 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
     return arr;
   }, [lists, tab]);
 
-  // totals for summary header (post-filter counts)
   const totals = useMemo(() => {
     const totalFiltered = filteredRecords.length;
     const totalAll = (lists[tab] || []).length;
     return { totalFiltered, totalAll };
   }, [filteredRecords, lists, tab]);
 
-  // Export currently filtered records
   const handleExportFiltered = () => {
-    // convert objects to plain export-ready rows
     const rows = filteredRecords.map((r) => {
-      // flatten main fields
       const base = {
         id: r.id || "",
         fullName: r.fullName || r.passenger?.fullName || "",
@@ -483,37 +535,58 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
       };
       return base;
     });
-    exportToCSV(`${email}_${tab}_export_${new Date().toISOString().slice(0, 10)}.csv`, rows);
+    exportToCSV(
+      `${email}_${tab}_export_${new Date().toISOString().slice(0, 10)}.csv`,
+      rows
+    );
+  };
+
+  const handleClearDates = () => {
+    setStartDate("");
+    setEndDate("");
   };
 
   return (
     <div>
       {/* header */}
-      <div  className="flex items-start justify-between gap-4 mb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-slate-800">Records for</h2>
-            <div className="text-emerald-600 font-semibold truncate">{email}</div>
+            <h2 className="text-xl font-bold text-white">Records for</h2>
+            <div className="text-purple-400 font-semibold truncate text-lg">
+              {email}
+            </div>
             <button
               onClick={onClose}
               title="Close panel"
-              className="ml-3 text-xs text-slate-500 hover:text-slate-700"
+              className="ml-3 text-lg text-gray-500 hover:text-white transition"
             >
               <FaTimes />
             </button>
           </div>
-          <div className="text-xs text-slate-500 mt-1">Tab: {tab.toUpperCase()}</div>
+          <div className="text-xs text-gray-500 mt-1">
+            Tab: {tab.toUpperCase()}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="text-sm text-slate-600 mr-2">
-            <div>Showing <span className="font-semibold text-slate-800">{totals.totalFiltered}</span> of <span className="text-slate-500">{totals.totalAll}</span> {tab} records</div>
-            <div className="text-xs text-slate-400">Use search/date filters to narrow results</div>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+          <div className="text-sm text-gray-400 mr-2">
+            <div>
+              Showing{" "}
+              <span className="font-semibold text-white">
+                {totals.totalFiltered}
+              </span>{" "}
+              of <span className="text-gray-500">{totals.totalAll}</span>{" "}
+              {tab} records
+            </div>
+            <div className="text-xs text-gray-500">
+              Use search/date filters to narrow results
+            </div>
           </div>
 
           <button
             onClick={handleExportFiltered}
-            className="flex items-center gap-2 bg-emerald-600 text-white px-3 py-2 rounded-lg text-sm shadow hover:brightness-95 transition"
+            className="flex items-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm shadow hover:brightness-95 transition transform hover:scale-105"
             title="Export filtered records to CSV"
           >
             <FaDownload /> Export
@@ -522,32 +595,39 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
         {["visa", "ticket", "umrah"].map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${tab === t ? "bg-emerald-600 text-white shadow-md" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+              tab === t
+                ? "bg-purple-600 text-white shadow-md transform scale-105"
+                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+            }`}
           >
-            {t.toUpperCase()} <span className="ml-2 text-xs text-slate-400">({(lists[t] || []).length})</span>
+            {t.toUpperCase()}{" "}
+            <span className="ml-2 text-xs text-gray-500">
+              ({(lists[t] || []).length})
+            </span>
           </button>
         ))}
       </div>
 
       {/* Filters row */}
-      <div  className="flex flex-wrap items-center gap-3 mb-6">
+      <div className="flex flex-wrap items-center gap-3 mb-6">
         <div className="relative flex-1 min-w-[220px]">
-          <FaSearch className="absolute left-3 top-3 text-slate-400" />
+          <FaSearch className="absolute left-3 top-3.5 text-gray-500" />
           <input
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
-            placeholder="Search inside this employee (name / passport / vendor / pnr / country)..."
-            className="w-full pl-10 pr-3 py-3 rounded-xl border text-sm shadow-sm outline-none focus:ring-2 focus:ring-emerald-400"
+            placeholder="Search inside this employee..."
+            className="w-full pl-10 pr-3 py-3 rounded-xl border text-sm shadow-inner outline-none bg-gray-900 text-white border-gray-700 focus:ring-2 focus:ring-purple-500"
           />
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 text-sm text-slate-600">
+          <label className="flex items-center gap-2 text-sm text-gray-400">
             <FaCalendarAlt />
             <span className="text-xs">From</span>
           </label>
@@ -555,12 +635,12 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="border rounded-lg px-3 py-2 text-sm shadow-sm"
+            className="border rounded-lg px-3 py-2 text-sm shadow-sm bg-gray-900 text-gray-300 border-gray-700"
           />
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 text-sm text-slate-600">
+          <label className="flex items-center gap-2 text-sm text-gray-400">
             <FaCalendarAlt />
             <span className="text-xs">To</span>
           </label>
@@ -568,15 +648,27 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="border rounded-lg px-3 py-2 text-sm shadow-sm"
+            className="border rounded-lg px-3 py-2 text-sm shadow-sm bg-gray-900 text-gray-300 border-gray-700"
           />
         </div>
 
+        <div className="flex items-center gap-2">
+          {startDate || endDate ? (
+            <button
+              onClick={handleClearDates}
+              className="px-3 py-2 rounded-lg bg-gray-700 text-gray-300 border border-gray-600 text-sm shadow-sm hover:bg-gray-600 transition"
+              title="Clear date filters"
+            >
+              Clear
+            </button>
+          ) : null}
+        </div>
+
         <div className="ml-auto flex items-center gap-2">
-          <label className="text-sm text-slate-600 mr-2">View:</label>
+          <label className="text-sm text-gray-400 mr-2">View:</label>
           <button
             onClick={() => setGroupByDateView((s) => !s)}
-            className="px-3 py-2 rounded-lg bg-white border text-sm shadow-sm"
+            className="px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 text-gray-300 text-sm shadow-sm hover:bg-gray-600 transition"
             title="Toggle grouped / flat"
           >
             {groupByDateView ? "Grouped by date" : "Flat list"}
@@ -586,12 +678,9 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
 
       {/* Records area */}
       <div className="space-y-4">
-        {/* when grouped view is on, show groupedByDate (but each group is filtered by date/search as well) */}
         {groupByDateView ? (
-          // iterate groupedByDate, but present only items that pass the filters
           groupedFilteredView(lists[tab] || [], localSearch, startDate, endDate)
         ) : (
-          // flat list: show filteredRecords
           <FlatList records={filteredRecords} tab={tab} />
         )}
       </div>
@@ -601,18 +690,14 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
 
 /* ------------------------------- Grouped view helper ------------------------------- */
 
-// This component builds groups by date and then applies same filters as above
 function groupedFilteredView(list, localSearch, startDate, endDate) {
-  // build map date -> items
   const map = {};
   for (const item of list) {
     const date = toISODate(item) || "No date";
     if (!map[date]) map[date] = [];
-    // local filter applied later
     map[date].push(item);
   }
 
-  // prepare sorted date keys (desc) with "No date" last
   const keys = Object.keys(map).sort((a, b) => {
     if (a === "No date") return 1;
     if (b === "No date") return -1;
@@ -624,7 +709,6 @@ function groupedFilteredView(list, localSearch, startDate, endDate) {
       {keys.map((dateKey) => {
         const items = map[dateKey]
           .filter((item) => {
-            // apply same search+date filter
             const q = localSearch.trim().toLowerCase();
             const text = (
               (item.fullName || "") +
@@ -649,7 +733,7 @@ function groupedFilteredView(list, localSearch, startDate, endDate) {
             if (q && !text.includes(q)) return false;
             const ds = toISODate(item);
             if (!ds) {
-              return !startDate && !endDate; // include only if no date filters set
+              return !startDate && !endDate;
             }
             if (startDate && ds < startDate) return false;
             if (endDate && ds > endDate) return false;
@@ -659,8 +743,12 @@ function groupedFilteredView(list, localSearch, startDate, endDate) {
             const da = toISODate(a) || "";
             const db = toISODate(b) || "";
             if (da === db) {
-              const ta = a.createdAt?.seconds || (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
-              const tb = b.createdAt?.seconds || (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
+              const ta =
+                a.createdAt?.seconds ||
+                (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
+              const tb =
+                b.createdAt?.seconds ||
+                (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
               return tb - ta;
             }
             return db.localeCompare(da);
@@ -669,13 +757,17 @@ function groupedFilteredView(list, localSearch, startDate, endDate) {
         if (items.length === 0) return null;
 
         return (
-          <div key={dateKey} className="bg-slate-50 rounded-lg p-3 border">
+          <div key={dateKey} className="bg-gray-900 rounded-lg p-4 border border-gray-700">
             <div className="flex items-center justify-between mb-3">
-              <div className="text-sm font-semibold text-slate-700">{dateKey === "No date" ? "No date available" : dateKey}</div>
-              <div className="text-xs text-slate-500">{items.length} record{items.length !== 1 ? "s" : ""}</div>
+              <div className="text-md font-semibold text-white">
+                {dateKey === "No date" ? "No date available" : dateKey}
+              </div>
+              <div className="text-xs text-gray-500">
+                {items.length} record{items.length !== 1 ? "s" : ""}
+              </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               {items.map((r) => (
                 <RecordCard key={r.id || JSON.stringify(r)} r={r} />
               ))}
@@ -691,10 +783,10 @@ function groupedFilteredView(list, localSearch, startDate, endDate) {
 
 function FlatList({ records, tab }) {
   if (!records || records.length === 0) {
-    return <div className="text-center py-8 text-slate-400">No records found</div>;
+    return <div className="text-center py-8 text-gray-500">No records found</div>;
   }
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {records.map((r) => (
         <RecordCard key={r.id || JSON.stringify(r)} r={r} />
       ))}
@@ -705,34 +797,36 @@ function FlatList({ records, tab }) {
 /* ------------------------------- Single Record Card ------------------------------- */
 
 function RecordCard({ r }) {
-  // choose small label based on fields
-  const label =
-    r.country || r.to || r.vendor || r.airlinePref || r.from || "Record";
+  const label = r.country || r.to || r.vendor || r.airlinePref || r.from || "Record";
 
   return (
-    <div className="bg-white rounded-lg p-3 border shadow-sm hover:shadow-md transition">
-      <div className="flex items-start justify-between gap-3">
+    <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 shadow-sm hover:shadow-lg transform transition duration-200">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-3">
-            <div className="text-sm font-semibold text-slate-800 truncate">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="text-sm font-semibold text-white truncate">
               {r.fullName || r.passenger?.fullName || "—"}
             </div>
-            <div className="text-xs text-slate-400">{r.passport || r.passportNumber || ""}</div>
+            <div className="text-xs text-gray-400">
+              {r.passport || r.passportNumber || ""}
+            </div>
           </div>
 
-          <div className="text-xs text-slate-600 mt-2">
+          <div className="text-xs text-gray-400 mt-2">
             {r.country ? <span>{r.country} • </span> : null}
             {r.from && r.to ? <span>{r.from} → {r.to} • </span> : null}
             {r.departure ? <span>Departure: {r.departure} • </span> : null}
             {r.date ? <span>Date: {r.date} • </span> : null}
-            <span>Status: <b className="text-slate-700">{r.status || r.visaStatus || r.paymentStatus || "N/A"}</b></span>
+            <span>Status: <b className="text-purple-400">{r.status || r.visaStatus || r.paymentStatus || "N/A"}</b></span>
           </div>
         </div>
 
-        <div className="flex flex-col items-end gap-2">
-          <div className="text-xs text-slate-500">Payable</div>
-          <div className="font-semibold text-emerald-600">{r.payable || r.totalFee || r.price || "0"}</div>
-          <div className="text-xs text-slate-400">{label}</div>
+        <div className="flex flex-col items-start sm:items-end gap-1 mt-2 sm:mt-0">
+          <div className="text-xs text-gray-500">Payable</div>
+          <div className="font-semibold text-sky-400 text-lg">
+            {r.payable || r.totalFee || r.price || "0"}
+          </div>
+          <div className="text-xs text-gray-500">{label}</div>
         </div>
       </div>
     </div>
