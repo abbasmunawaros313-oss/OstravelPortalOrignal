@@ -8,7 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { FaPassport, FaUser, FaGlobeEurope, FaDollarSign, FaCreditCard, FaCalendarAlt, FaAt, FaPhone, FaLink, FaCommentDots, FaStore } from "react-icons/fa";
 import { RiVisaLine, RiPlaneLine, RiHandCoinLine } from "react-icons/ri";
 import { BiChevronDown, BiCheckCircle } from "react-icons/bi";
-import Footer from "../Components/Footer";
+
 export default function Bookings() {
   const { user } = useAuth();
   const today = new Date().toISOString().split("T")[0];
@@ -531,7 +531,7 @@ export default function Bookings() {
             50% { opacity: 0.8; transform: scale(1.05); }
         }
       `}</style>
-     <Footer />
+    
     </div>
   );
 }
