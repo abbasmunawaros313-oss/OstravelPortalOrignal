@@ -1,11 +1,23 @@
 import { useState } from "react";
 import { MdFlightTakeoff } from "react-icons/md";
 import { db } from "../firebase";
-import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
+import { collection, addDoc } from "firebase/firestore";
 import { Timestamp } from "firebase/firestore";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
-import { FaPassport, FaUser, FaGlobeEurope, FaDollarSign, FaCreditCard, FaCalendarAlt, FaAt, FaPhone, FaLink, FaCommentDots, FaStore } from "react-icons/fa";
+import {
+  FaPassport,
+  FaUser,
+  FaGlobeEurope,
+  FaDollarSign,
+  FaCreditCard,
+  FaCalendarAlt,
+  FaAt,
+  FaPhone,
+  FaLink,
+  FaCommentDots,
+  FaStore,
+} from "react-icons/fa";
 import { RiVisaLine, RiPlaneLine, RiHandCoinLine } from "react-icons/ri";
 import { BiChevronDown, BiCheckCircle } from "react-icons/bi";
 
@@ -23,6 +35,7 @@ export default function Bookings() {
     totalFee: "",
     receivedFee: "",
     remainingFee: "",
+    profit: "", // 👈 NEW
     paymentStatus: "",
     country: "",
     visaStatus: "",
@@ -61,7 +74,8 @@ export default function Bookings() {
     if (!form.paymentStatus) newErrors.paymentStatus = "Select payment status.";
     if (!form.country) newErrors.country = "Country required.";
     if (!form.visaStatus) newErrors.visaStatus = "Visa status required.";
-    if (!form.embassyFee) newErrors.embassyFee = "Enter valid embassy fee.";
+    if (!form.embassyFee || isNaN(form.embassyFee))
+      newErrors.embassyFee = "Enter valid embassy fee.";
     if (!form.email) newErrors.email = "Email is required.";
     if (!/^\d{10,15}$/.test(form.phone))
       newErrors.phone = "Phone must be 10–15 digits.";
@@ -91,16 +105,18 @@ export default function Bookings() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Auto-calc Remaining Fee
+  // Auto-calc Remaining Fee + Profit
   const handleChange = (e) => {
     const { name, value } = e.target;
     let updatedForm = { ...form, [name]: value };
 
-    if (name === "totalFee" || name === "receivedFee") {
-      const total = Number(name === "totalFee" ? value : form.totalFee);
-      const received = Number(name === "receivedFee" ? value : form.receivedFee);
-      updatedForm.remainingFee = total - received;
-    }
+    const total = Number(name === "totalFee" ? value : form.totalFee) || 0;
+    const received = Number(name === "receivedFee" ? value : form.receivedFee) || 0;
+    const embassy = Number(name === "embassyFee" ? value : form.embassyFee) || 0;
+    const vendor = Number(name === "vendorFee" ? value : form.vendorFee) || 0;
+
+    updatedForm.remainingFee = total - received;
+    updatedForm.profit = total - embassy - vendor;
 
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -130,8 +146,9 @@ export default function Bookings() {
         totalFee: Number(form.totalFee),
         receivedFee: Number(form.receivedFee),
         remainingFee: Number(form.remainingFee),
+        profit: Number(form.profit), // 👈 Save profit
         embassyFee: Number(form.embassyFee),
-        vendorFee: form.visaType === "Appointment" ? Number(form.vendorFee) : "",
+        vendorFee: form.visaType === "Appointment" ? Number(form.vendorFee) : 0,
         userId: user.uid,
         userEmail: user.email,
         createdAt: Timestamp.now(),
@@ -150,6 +167,7 @@ export default function Bookings() {
         totalFee: "",
         receivedFee: "",
         remainingFee: "",
+        profit: "",
         paymentStatus: "",
         country: "",
         visaStatus: "",
@@ -181,7 +199,7 @@ export default function Bookings() {
       name: "visaType",
       type: "select",
       options: ["Business", "Tourism", "Family Visit", "National Visa", "Appointment"],
-      icon: RiVisaLine
+      icon: RiVisaLine,
     },
     { label: "Application Date", name: "date", type: "date", readonly: true, icon: FaCalendarAlt },
     { label: "Country", name: "country", type: "text", placeholder: "e.g. UAE", icon: FaGlobeEurope },
@@ -190,17 +208,18 @@ export default function Bookings() {
       name: "visaStatus",
       type: "select",
       options: ["Approved", "Rejected", "Processing"],
-      icon: BiCheckCircle
+      icon: BiCheckCircle,
     },
     { label: "Total Fee", name: "totalFee", type: "number", placeholder: "0", icon: FaDollarSign },
     { label: "Received Fee", name: "receivedFee", type: "number", placeholder: "0", icon: RiHandCoinLine },
     { label: "Remaining Fee", name: "remainingFee", type: "number", readonly: true, icon: FaCreditCard },
+    { label: "Profit", name: "profit", type: "number", readonly: true, icon: RiHandCoinLine }, // 👈 NEW
     {
       label: "Payment Status",
       name: "paymentStatus",
       type: "select",
       options: ["Paid", "Unpaid", "Partially Paid"],
-      icon: FaCreditCard
+      icon: FaCreditCard,
     },
     { label: "Embassy Fee", name: "embassyFee", type: "number", placeholder: "0", icon: FaDollarSign },
     { label: "Email", name: "email", type: "email", placeholder: "john.doe@example.com", icon: FaAt },
@@ -210,8 +229,9 @@ export default function Bookings() {
 
   return (
     <div className="relative min-h-screen bg-black overflow-hidden font-sans text-gray-100 flex items-center justify-center p-8">
-      {/* Dynamic Animated Background */}
-      <div className="absolute inset-0 z-0 bg-travel-grid">
+      {/* ... keep the same UI / animations ... */}
+        
+<div className="absolute inset-0 z-0 bg-travel-grid">
         <div className="absolute inset-0 bg-black/90"></div>
         <div className="absolute inset-0 z-10 animate-pulse-light"></div>
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-900/10 via-transparent to-green-900/10 animate-fade-in"></div>
@@ -220,19 +240,18 @@ export default function Bookings() {
         <div className="absolute bottom-1/4 right-1/4 w-40 h-40 bg-green-500/20 blur-3xl animate-blob-pulse-2"></div>
       </div>
 
-      {/* Main Content */}
       <div className="relative z-20 w-full max-w-6xl animate-fade-in-up">
-        <div className="bg-white/5 backdrop-blur-xl border border-gray-700 shadow-2xl rounded-3xl p-10 transform transition-all duration-500 hover:scale-[1.005] hover:shadow-3xl">
+        <div className="bg-white/5 backdrop-blur-xl border border-gray-700 shadow-2xl rounded-3xl p-10">
           {/* Header */}
           <div className="flex items-center justify-center gap-4 mb-12 text-center">
-            <MdFlightTakeoff className="text-blue-400 text-5xl drop-shadow-lg animate-pulse-slow" />
-            <h1 className="text-4xl font-extrabold text-white tracking-wider drop-shadow-md">
-             Bookings 
+            <MdFlightTakeoff className="text-blue-400 text-5xl" />
+            <h1 className="text-4xl font-extrabold text-white tracking-wider">
+              Flight Operations
             </h1>
           </div>
 
           {/* User Info */}
-          <div className="mb-8 p-5 bg-blue-900/40 rounded-2xl border border-blue-800 shadow-inner flex items-center gap-4 animate-fade-in-up">
+          <div className="mb-8 p-5 bg-blue-900/40 rounded-2xl border border-blue-800 flex items-center gap-4">
             <FaUser className="text-blue-400 text-2xl" />
             <div>
               <p className="text-blue-200 text-sm font-semibold">
@@ -250,32 +269,32 @@ export default function Bookings() {
           >
             {/* Common Fields */}
             {formFields.map((field, i) => (
-              <div key={i} className="col-span-1 group relative animate-slide-in-left-delay">
-                <label className="block text-sm font-semibold text-gray-300 mb-2 transition-colors duration-300 group-focus-within:text-blue-400">
+              <div key={i} className="col-span-1 group relative">
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
                   {field.label}
                 </label>
                 <div className="relative">
                   {field.type === "select" ? (
                     <div className="relative">
-                      <field.icon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+                      <field.icon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
                       <select
                         name={field.name}
                         value={form[field.name]}
                         onChange={handleChange}
-                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 shadow-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all duration-300 bg-gray-800/60 text-white cursor-pointer appearance-none"
+                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 bg-gray-800/60 text-white"
                       >
-                        <option value="" className="bg-gray-900">Select {field.label}</option>
+                        <option value="">Select {field.label}</option>
                         {field.options.map((opt, idx) => (
-                          <option key={idx} value={opt} className="bg-gray-900">
+                          <option key={idx} value={opt}>
                             {opt}
                           </option>
                         ))}
                       </select>
-                      <BiChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                      <BiChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500" />
                     </div>
                   ) : (
                     <>
-                      <field.icon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+                      <field.icon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
                       <input
                         type={field.type}
                         name={field.name}
@@ -283,14 +302,16 @@ export default function Bookings() {
                         onChange={handleChange}
                         readOnly={field.readonly}
                         placeholder={field.placeholder}
-                        className={`w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 shadow-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all duration-300 ${
-                          field.readonly ? "bg-gray-800/80 text-gray-400 cursor-not-allowed" : "bg-gray-800/60 text-white placeholder-gray-500"
+                        className={`w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 ${
+                          field.readonly
+                            ? "bg-gray-800/80 text-gray-400"
+                            : "bg-gray-800/60 text-white"
                         }`}
                       />
                     </>
                   )}
                   {errors[field.name] && (
-                    <p className="text-red-400 text-xs mt-2 ml-1 drop-shadow-sm animate-pulse-once">
+                    <p className="text-red-400 text-xs mt-2 ml-1">
                       {errors[field.name]}
                     </p>
                   )}
@@ -301,89 +322,94 @@ export default function Bookings() {
             {/* Conditional Fields */}
             {form.visaType === "Appointment" ? (
               <>
-                <div className="col-span-1 group relative animate-slide-in-right-delay">
-                  <label className="block text-sm font-semibold text-gray-300 mb-2 transition-colors duration-300 group-focus-within:text-blue-400">
+                {/* Vendor Fields */}
+                <div className="col-span-1">
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
                     Vendor Name
                   </label>
                   <div className="relative">
-                    <FaStore className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+                    <FaStore className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
                     <input
                       type="text"
                       name="vendor"
                       value={form.vendor}
                       onChange={handleChange}
                       placeholder="Vendor Name"
-                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 shadow-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all duration-300 bg-gray-800/60 text-white placeholder-gray-500"
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 bg-gray-800/60 text-white"
                     />
                   </div>
-                  {errors.vendor && <p className="text-red-400 text-xs mt-2 ml-1">{errors.vendor}</p>}
+                  {errors.vendor && <p className="text-red-400 text-xs">{errors.vendor}</p>}
                 </div>
-                <div className="col-span-1 group relative animate-slide-in-right-delay">
-                  <label className="block text-sm font-semibold text-gray-300 mb-2 transition-colors duration-300 group-focus-within:text-blue-400">
+
+                <div className="col-span-1">
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
                     Vendor Contact
                   </label>
                   <div className="relative">
-                    <FaPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+                    <FaPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
                     <input
                       type="text"
                       name="vendorContact"
                       value={form.vendorContact}
                       onChange={handleChange}
                       placeholder="Vendor Contact Number"
-                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 shadow-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all duration-300 bg-gray-800/60 text-white placeholder-gray-500"
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 bg-gray-800/60 text-white"
                     />
                   </div>
-                  {errors.vendorContact && <p className="text-red-400 text-xs mt-2 ml-1">{errors.vendorContact}</p>}
+                  {errors.vendorContact && <p className="text-red-400 text-xs">{errors.vendorContact}</p>}
                 </div>
-                <div className="col-span-1 group relative animate-slide-in-right-delay">
-                  <label className="block text-sm font-semibold text-gray-300 mb-2 transition-colors duration-300 group-focus-within:text-blue-400">
+
+                <div className="col-span-1">
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
                     Vendor Fee
                   </label>
                   <div className="relative">
-                    <FaDollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+                    <FaDollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
                     <input
                       type="number"
                       name="vendorFee"
                       value={form.vendorFee}
                       onChange={handleChange}
                       placeholder="Enter Vendor Fee"
-                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 shadow-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all duration-300 bg-gray-800/60 text-white placeholder-gray-500"
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 bg-gray-800/60 text-white"
                     />
                   </div>
-                  {errors.vendorFee && <p className="text-red-400 text-xs mt-2 ml-1">{errors.vendorFee}</p>}
+                  {errors.vendorFee && <p className="text-red-400 text-xs">{errors.vendorFee}</p>}
                 </div>
               </>
             ) : (
               <>
-                <div className="col-span-1 group relative animate-slide-in-right-delay">
-                  <label className="block text-sm font-semibold text-gray-300 mb-2 transition-colors duration-300 group-focus-within:text-blue-400">
+                {/* Embassy Dates */}
+                <div className="col-span-1">
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
                     Sent To Embassy
                   </label>
                   <div className="relative">
-                    <RiPlaneLine className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+                    <RiPlaneLine className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
                     <input
                       type="text"
                       name="sentToEmbassy"
                       value={form.sentToEmbassy}
                       onChange={handleChange}
                       placeholder="e.g., 20/sep/2025"
-                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 shadow-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all duration-300 bg-gray-800/60 text-white placeholder-gray-500"
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 bg-gray-800/60 text-white"
                     />
                   </div>
                 </div>
-                <div className="col-span-1 group relative animate-slide-in-right-delay">
-                  <label className="block text-sm font-semibold text-gray-300 mb-2 transition-colors duration-300 group-focus-within:text-blue-400">
+
+                <div className="col-span-1">
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
                     Received From Embassy
                   </label>
                   <div className="relative">
-                    <RiPlaneLine className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+                    <RiPlaneLine className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
                     <input
                       type="text"
                       name="receivedFromEmbassy"
                       value={form.receivedFromEmbassy}
                       onChange={handleChange}
                       placeholder="e.g., 25/sep/2025"
-                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 shadow-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all duration-300 bg-gray-800/60 text-white placeholder-gray-500"
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 bg-gray-800/60 text-white"
                     />
                   </div>
                 </div>
@@ -391,33 +417,33 @@ export default function Bookings() {
             )}
 
             {/* Remarks */}
-            <div className="md:col-span-2 lg:col-span-3 group animate-slide-in-up-delay">
-              <label className="block text-sm font-semibold text-gray-300 mb-2 transition-colors duration-300 group-focus-within:text-blue-400">
+            <div className="md:col-span-2 lg:col-span-3">
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
                 Remarks
               </label>
               <div className="relative">
-                <FaCommentDots className="absolute left-4 top-4 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+                <FaCommentDots className="absolute left-4 top-4 text-gray-500" />
                 <textarea
                   name="remarks"
                   value={form.remarks}
                   onChange={handleChange}
                   placeholder="Additional notes..."
-                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 shadow-lg focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all duration-300 bg-gray-800/60 text-white placeholder-gray-500"
+                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 bg-gray-800/60 text-white"
                   rows="3"
                 />
               </div>
-              {errors.remarks && <p className="text-red-400 text-xs mt-2 ml-1">{errors.remarks}</p>}
+              {errors.remarks && <p className="text-red-400 text-xs">{errors.remarks}</p>}
             </div>
 
             {/* Save Button */}
-            <div className="md:col-span-2 lg:col-span-3 pt-6 animate-fade-in-up-delay">
+            <div className="md:col-span-2 lg:col-span-3 pt-6">
               <button
                 type="submit"
                 disabled={isSubmitting || !user}
-                className={`w-full py-4 rounded-full font-bold text-lg shadow-xl transform transition-all duration-300 ease-in-out hover:scale-[1.01] hover:shadow-2xl flex items-center justify-center gap-3 ${
+                className={`w-full py-4 rounded-full font-bold text-lg flex items-center justify-center gap-3 ${
                   isSubmitting || !user
                     ? "bg-gray-700 text-gray-500 cursor-not-allowed"
-                    : "bg-gradient-to-r from-blue-600 to-teal-500 text-white hover:from-blue-700 hover:to-teal-600"
+                    : "bg-gradient-to-r from-blue-600 to-teal-500 text-white"
                 }`}
               >
                 {!user ? (
@@ -425,20 +451,18 @@ export default function Bookings() {
                 ) : isSubmitting ? (
                   <>
                     <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
-                    <span>Saving...</span>
+                    Saving...
                   </>
                 ) : (
-                  <>
-                    <MdFlightTakeoff className="text-xl" />
-                    <span>Save Booking</span>
-                  </>
+                  "Save Booking"
                 )}
               </button>
             </div>
           </form>
         </div>
       </div>
-      
+
+
       {/* Tailwind CSS keyframes for animation */}
       <style>{`
         .bg-travel-grid {
@@ -531,7 +555,6 @@ export default function Bookings() {
             50% { opacity: 0.8; transform: scale(1.05); }
         }
       `}</style>
-    
     </div>
   );
 }
