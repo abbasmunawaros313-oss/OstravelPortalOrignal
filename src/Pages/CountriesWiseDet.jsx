@@ -360,17 +360,25 @@ function CountriesWiseDet() {
           <div>
             <p className="text-sm text-gray-400">Total Revenue</p>
             <p className="text-2xl font-bold text-emerald-400">
-              ${stats.totalRevenue.toFixed(2)}
+              PKR: {stats.totalRevenue + stats.pendingRevenue}
             </p>
           </div>
           <MdAttachMoney className="text-emerald-400 text-3xl" />
         </div>
-
+       <div className="bg-slate-800 p-6 rounded-xl shadow-lg flex items-center justify-between hover:scale-105 transition duration-300">
+          <div>
+            <p className="text-sm text-gray-400">Received Revenue</p>
+            <p className="text-2xl font-bold text-green-400">
+             PKR:  {stats.totalRevenue.toFixed(2)}
+            </p>
+          </div>
+          <MdAttachMoney className="text-emerald-400 text-3xl" />
+        </div>
         <div className="bg-slate-800 p-6 rounded-xl shadow-lg flex items-center justify-between hover:scale-105 transition duration-300">
           <div>
             <p className="text-sm text-gray-400">Pending Revenue</p>
             <p className="text-2xl font-bold text-orange-400">
-              ${stats.pendingRevenue.toFixed(2)}
+             PKR:  {stats.pendingRevenue.toFixed(2)}
             </p>
           </div>
           <MdWarning className="text-orange-400 text-3xl" />
