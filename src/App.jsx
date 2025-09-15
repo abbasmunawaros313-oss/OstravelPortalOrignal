@@ -28,6 +28,8 @@ import HoetlDetAdminSide from "./Pages/HoetlDetAdminSide";
 import MedicalInsurence from "./Pages/MedicalInsurence";
 import ViewAllMedicalBookings from "./Pages/ViewAllMedicalBookings";
 import AdminSideMedicalInsurrance from "./Pages/AdminSideMedicalInsurrance";
+import CustomerCountryPage from "./Pages/CustomerCountryPage";
+import SendEmailPage  from "./Pages/SendEmailPage";
 
 // 🔒 Protected Route
 const ProtectedRoute = ({ children }) => {
@@ -99,6 +101,24 @@ function AdminRoutes() {
           </ProtectedRoute>
         }
         />
+        <Route
+          path="/customer-country"
+          element={
+            <ProtectedRoute>
+              <CustomerCountryPage />
+            </ProtectedRoute>
+          }
+        
+        />
+       <Route
+  path="/send-email/:country"
+  element={
+    <ProtectedRoute>
+      <SendEmailPage />
+    </ProtectedRoute>
+  }
+/>
+
       {/* ✅ fallback for admin */}
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
     </Routes>
