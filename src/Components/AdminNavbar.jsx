@@ -60,6 +60,13 @@ function AdminNavbar() {
           >
            Medical Insurance
           </Link>
+           <Link
+            to={"/customer-country"}
+            className="text-gray-700 font-medium hover:text-blue-600 transition"
+            onClick={() => setMenuOpen(false)}
+          >
+            Customer Country
+          </Link>
         </div>
 
         {/* Mobile Menu Button */}
@@ -126,7 +133,13 @@ function AdminNavbar() {
           >
            Hotel Bookings
           </Link>
-
+          <Link
+            to={"/customer-country"}
+            className="text-gray-700 font-medium hover:text-blue-600 transition"
+            onClick={() => setMenuOpen(false)}
+          >
+            Customer Country
+          </Link>
         </div>
       )}
     </nav>
