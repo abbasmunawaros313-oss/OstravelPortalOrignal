@@ -143,7 +143,8 @@ export default function AdminDashboard() {
     paid: filtered.filter(b => b.paymentStatus === "Paid").length,
     unpaid: filtered.filter(b => b.paymentStatus === "Unpaid").length,
     totalRevenue: filtered.reduce((sum, b) => sum + (Number(b.receivedFee) || 0), 0),
-    pendingRevenue: filtered.reduce((sum, b) => sum + (Number(b.remainingFee) || 0), 0)
+    pendingRevenue: filtered.reduce((sum, b) => sum + (Number(b.remainingFee) || 0), 0),
+    profit: filtered.reduce((sum, b) => sum + (Number(b.profit) || 0), 0)
   };
 
   setStats(stats);
@@ -187,6 +188,9 @@ export default function AdminDashboard() {
       employee.totalRevenue += Number(booking.totalFee || 0);
       employee.receivedRevenue += Number(booking.receivedFee || 0);
       employee.pendingRevenue += Number(booking.remainingFee || 0);
+      employee.profit+= Number(booking.profit || 0);
+    
+      employee.profit += Number(booking.profit || 0);
       
       if (booking.country) {
         employee.countries.add(booking.country);
@@ -403,7 +407,8 @@ const isWithinTimeRange = (bookingDate, filter) => {
         ["Paid", stats.paid.toString(), ""],
         ["Unpaid", stats.unpaid.toString(), ""],
         ["Total Revenue", "", `${stats.totalRevenue.toFixed(2)}`],
-        ["Pending Revenue", "", `${stats.pendingRevenue.toFixed(2)}`]
+        ["Pending Revenue", "", `${stats.pendingRevenue.toFixed(2)}`],
+        ["Total Profit", "", `${stats.profit.toFixed(2)}`]
       ],
       styles: {
         fontSize: 10,
@@ -540,12 +545,23 @@ const isWithinTimeRange = (bookingDate, filter) => {
               </div>
             </div>
           </div>
-
+          
+              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Receivable</p>
+                <p className="text-2xl font-bold text-green-600">{stats.totalRevenue + stats.pendingRevenue}</p>
+              </div>
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <MdAttachMoney className="text-green-600 text-xl" />
+              </div>
+            </div>
+          </div>
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Revenue Paid</p>
-                <p className="text-2xl font-bold text-green-600">{stats.totalRevenue.toFixed(2)}</p>
+                <p className="text-sm font-medium text-gray-600">Total Recieved</p>
+                <p className="text-2xl font-bold text-purple-600">{stats.totalRevenue.toFixed(2)}</p>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                 <MdAttachMoney className="text-green-600 text-xl" />
@@ -561,6 +577,17 @@ const isWithinTimeRange = (bookingDate, filter) => {
               </div>
               <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                 <MdWarning className="text-orange-600 text-xl" />
+              </div>
+            </div>
+          </div>
+           <div className="bg-white rounded-xl shadow-sm p-6 border-4 border-green-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600"> Profit</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.profit}</p>
+              </div>
+              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                <MdAttachMoney className="text-green-600 text-xl" />
               </div>
             </div>
           </div>
@@ -1141,16 +1168,21 @@ const isWithinTimeRange = (bookingDate, filter) => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Received Fee</label>
-                <p className="text-sm text-gray-900">${selectedBooking.receivedFee || "0"}</p>
+                <p className="text-sm text-gray-900">PKR: {selectedBooking.receivedFee || "0"}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Remaining Fee</label>
-                <p className="text-sm text-gray-900">${selectedBooking.remainingFee || "0"}</p>
+                <p className="text-sm text-gray-900">PKR: {selectedBooking.remainingFee || "0"}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Profit</label>
+                <p className="text-sm text-gray-900">PKR: {selectedBooking.profit || "0"}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Reference</label>
                 <p className="text-sm text-gray-900">{selectedBooking.embassyFee || "Not set"}</p>
               </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Visa Status</label>
                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
