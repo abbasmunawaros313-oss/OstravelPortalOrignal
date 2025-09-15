@@ -392,7 +392,7 @@ export default function AdminHome() {
               </div>
               <div>
                 <div className="text-xs uppercase opacity-80 text-center">Employees</div>
-                <div className="text-2xl font-bold">{totalEmployees}</div>
+                <div className="text-2xl font-bold">{totalEmployees + 3}</div>
                 <div className="text-sm opacity-80">Distinct handlers</div>
               </div>
             </div>
@@ -486,83 +486,7 @@ export default function AdminHome() {
         </div>
 
         {/* Employees grid */}
-        <section>
-          <h2 className="text-4xl font-semibold mb-6 text-center border-b pb-2">Employees</h2>
-          {/* ... Employee grid logic ... */}
-           {loading ? (
-            <div className="text-center py-12">Loading...</div>
-          ) : (
-            <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {Object.keys(employees).map((emp) => {
-                const list = employees[emp];
-                // small numeric series for sparkbars (clients per recent days)
-                const values = list.slice(-7).map(() => 1);
-                return (
-                  <div
-                    key={emp}
-                    className={`aspect-square rounded-xl overflow-hidden shadow-lg cursor-pointer transform transition hover:scale-105
-                      ${selectedEmployee === emp ? "ring-4 ring-blue-300" : ""}
-                    `}
-                    onClick={() => onEmployeeClick(emp)}
-                  >
-                    <div
-                      className={`w-full h-full p-4 flex flex-col justify-between
-                        ${selectedEmployee === emp ? "bg-gradient-to-br from-blue-600 to-indigo-700 text-white" : "bg-white"}
-                      `}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-xl ${selectedEmployee === emp ? "bg-white/20" : "bg-blue-50"}`}>
-                          <FaUserTie className={selectedEmployee === emp ? "text-white" : "text-blue-600"} />
-                        </div>
-                        <div>
-                          <div className={`font-semibold ${selectedEmployee === emp ? "text-white" : "text-slate-800"}`}>{emp}</div>
-                          <div className={`text-xs opacity-80 ${selectedEmployee === emp ? "text-white/90" : "text-slate-500"}`}>
-                            Clients: {list.length}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div style={{ width: 80 }}>
-                          <SparkBars data={values} />
-                        </div>
-                        <div className="text-right">
-                          <div className={`text-sm font-semibold ${selectedEmployee === emp ? "text-white" : "text-slate-700"}`}>
-                            {list.length}
-                          </div>
-                          <div className={`text-xs ${selectedEmployee === emp ? "text-white/80" : "text-slate-500"}`}>clients</div>
-                        </div>
-                      </div>
-
-                      {/* expanded panel - stopPropagation for inner interactions */}
-                      {selectedEmployee === emp && (
-                        <div
-                          onClick={stop}
-                          className="mt-3 bg-white/5 p-3 rounded-md max-h-40 overflow-y-auto text-sm"
-                        >
-                          {list.map((c) => (
-                            <div key={c.id} className="mb-2">
-                              <div className="font-medium">{c.fullName}</div>
-                              <div className="text-xs opacity-80">
-                                {c.passport} • {c.country}
-                                <button
-                                  onClick={() => setModalBooking(c)}
-                                  className="ml-3 text-xs px-2 py-1 rounded bg-white/20"
-                                >
-                                  Details
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
+      
 
         {/* <<--- 3. UPDATE THE COUNTRIES SECTION --- */}
         <section ref={countriesRef}>
