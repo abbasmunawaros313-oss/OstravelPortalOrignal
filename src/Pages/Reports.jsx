@@ -118,9 +118,10 @@ export default function Report() {
         ["Received From Embassy", booking.receivedFromEmbassy || "-", "Country", booking.country || "-"],
         ["Visa Status", booking.visaStatus || "-", "Total Fee", `${booking.totalFee || "0"}`],
         ["Received Fee", `${booking.receivedFee || "0"}`, "Remaining Fee", `${booking.remainingFee || "0"}`],
+        ["Reference", booking.reference || "-", "Embassy Fee", booking.embassyFee || "-"],
         ["Payment Status", booking.paymentStatus || "-", "Email", booking.email || "-"],
         ["Phone", booking.phone || "-", "Remarks", booking.remarks || "No remarks"],
-        ["Reference", booking.embassyFee || "-", "Vendor", booking.vendor || "-"],
+       
         ["Vendor Fee", booking.vendorFee || "-", "VendorContact", booking.vendorContact || "-"],
       ],
       styles: { fontSize: 8, cellPadding: 2, lineColor: [200, 200, 200], lineWidth: 0.1 },
@@ -342,7 +343,7 @@ export default function Report() {
           {/* Company Footer */}
           <div className="mt-12 text-center text-gray-600 text-sm animate-fadeIn" style={{ animationDelay: '1s' }}>
             <p className="mb-2">
-              © 2024{" "}
+              © 2025{" "}
               <span className="text-purple-400 font-semibold">
                 OS Travels & Tours
               </span>
