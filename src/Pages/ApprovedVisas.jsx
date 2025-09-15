@@ -360,16 +360,18 @@ export default function ApprovedVisas() {
                       <div className="text-green-400">Total: {b.totalFee}</div>
                       <div className="text-blue-400">Received: {b.receivedFee}</div>
                       <div className="text-red-400">Remaining: {b.remainingFee}</div>
+                      <div className="text-green-400">Profit: {b.profit}</div>
                       <div className="text-gray-400 text-xs">{b.paymentStatus}</div>
                     </td>
                     <td className="px-4 py-4 align-top">
                       <div className="text-gray-300">Sent: {b.sentToEmbassy || "-"}</div>
                       <div className="text-gray-300">Received: {b.receiveFromEmbassy || "-"}</div>
-                      <div className="text-gray-300">Ref: {b.embassyFee || "-"}</div>
+                      <div className="text-gray-300">Ref: {b.reference || "-"}</div>
                     </td>
                     <td className="px-4 py-4 align-top">
                       <div className="text-gray-300">Vendor Contact: {b.vendorContact || "-"}</div>
                       <div className="text-gray-300">Vendor Fee: {b.vendorFee || "-"}</div>
+                      <div className="text-gray-300">Embassy Fee: {b.embassyFee || "-"}</div>
                     </td>
                     <td className="px-4 py-4 align-top flex flex-col sm:flex-row gap-2">
                       <button
@@ -510,6 +512,7 @@ export default function ApprovedVisas() {
                   />
                 </div>
               </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-400">Payment Status</label>
                 <div className="relative mt-1">
@@ -718,6 +721,10 @@ export default function ApprovedVisas() {
                 <p className="text-sm">
                   <b className="text-gray-400">Remaining Fee:</b>{" "}
                   <span className="text-red-400">{viewing.remainingFee}</span>
+                </p>
+                  <p className="text-sm">
+                  <b className="text-gray-400">Profit:</b>{" "}
+                  <span className="text-red-400">{viewing.profit}</span>
                 </p>
                 <p className="text-sm">
                   <b className="text-gray-400">Payment Status:</b>{" "}
