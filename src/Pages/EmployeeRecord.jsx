@@ -11,6 +11,7 @@ import {
   FaTimes,
   FaCalendarAlt,
   FaChevronDown,
+  FaEye, // Icon for the view details button
 } from "react-icons/fa";
 import AdminNavbar from "../Components/AdminNavbar";
 import Footer from "../Components/Footer";
@@ -21,7 +22,7 @@ import toast from "react-hot-toast";
  * - Single-file, production-ready Employee Records admin page.
  * - Fetches bookings, ticketBookings, ummrahBookings and groups by user email.
  * - Accordion, tabs (visa/ticket/umrah), date-range + search filtering,
- * totals summary, grouping by date, export CSV.
+ * totals summary, grouping by date, export CSV, and detailed record modal.
  *
  * Styling note: uses Tailwind classes. Adjust to your design tokens if needed.
  */
@@ -105,6 +106,7 @@ export default function EmployeeRecord() {
   const [globalSearch, setGlobalSearch] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState(null); // email string
   const [showOnlyWithRecords, setShowOnlyWithRecords] = useState(false);
+  const [modalRecord, setModalRecord] = useState(null); // <-- NEW: State for the details modal
   const detailsRef = useRef(null);
 
   useEffect(() => {
@@ -118,7 +120,6 @@ export default function EmployeeRecord() {
     const fetchAll = async () => {
       setLoading(true);
       try {
-        // fetch collections
         const [visaSnap, ticketSnap, umrahSnap] = await Promise.all([
           getDocs(collection(db, "bookings")),
           getDocs(collection(db, "ticketBookings")),
@@ -143,7 +144,6 @@ export default function EmployeeRecord() {
 
         const all = [...visaData, ...ticketData, ...umrahData];
 
-        // group by email (userEmail or createdByEmail)
         const grouped = {};
         for (const item of all) {
           const email = (
@@ -288,6 +288,7 @@ export default function EmployeeRecord() {
                       emp={groupedByEmail[selectedEmployee]}
                       email={selectedEmployee}
                       onClose={() => setSelectedEmployee(null)}
+                      onRecordSelect={setModalRecord} // <-- Pass setter to details panel
                     />
                   </div>
                 </div>
@@ -298,6 +299,14 @@ export default function EmployeeRecord() {
       </main>
 
       <Footer />
+
+      {/* NEW: Render the modal conditionally */}
+      {modalRecord && (
+        <RecordDetailModal
+          record={modalRecord}
+          onClose={() => setModalRecord(null)}
+        />
+      )}
     </div>
   );
 }
@@ -421,14 +430,13 @@ function EmployeeCard({ email, counts = {}, total = 0, expanded = false, onToggl
 
 /* ------------------------------- Employee Details (big) ------------------------------- */
 
-function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onClose }) {
+function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onClose, onRecordSelect }) {
   const [tab, setTab] = useState("visa");
   const [localSearch, setLocalSearch] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [groupByDateView, setGroupByDateView] = useState(true); // grouped by date vs flat list
+  const [groupByDateView, setGroupByDateView] = useState(true);
 
-  // normalize: ensure arrays exist
   const lists = {
     visa: emp.visa || [],
     ticket: emp.ticket || [],
@@ -441,7 +449,6 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
 
     return list
       .filter((item) => {
-        // text search across many fields
         const text = (
           (item.fullName || "") +
           " " +
@@ -449,25 +456,12 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
           " " +
           (item.passport || item.passportNumber || "") +
           " " +
-          (item.country || "") +
-          " " +
-          (item.to || "") +
-          " " +
-          (item.from || "") +
-          " " +
-          (item.vendor || "") +
-          " " +
-          (item.pnr || "") +
-          " " +
-          (item.phone || "")
+          (item.country || "") + " " + (item.to || "") + " " + (item.from || "") +
+          " " + (item.vendor || "") + " " + (item.pnr || "") + " " + (item.phone || "")
         ).toLowerCase();
-
         if (q && !text.includes(q)) return false;
-
-        // date range
         const dateStr = toISODate(item);
         if (!dateStr) {
-          // if no date we keep it unless a strict date filter is present
           return !startDate && !endDate;
         }
         if (startDate && dateStr < startDate) return false;
@@ -475,39 +469,16 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
         return true;
       })
       .sort((a, b) => {
-        // show newest first by available date fallback to createdAt
         const da = toISODate(a) || "";
         const db = toISODate(b) || "";
         if (da === db) {
-          // fallback timestamp compare if present
-          const ta =
-            a.createdAt?.seconds ||
-            (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
-          const tb =
-            b.createdAt?.seconds ||
-            (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
+          const ta = a.createdAt?.seconds || (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
+          const tb = b.createdAt?.seconds || (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
           return tb - ta;
         }
         return db.localeCompare(da);
       });
   }, [lists, tab, localSearch, startDate, endDate]);
-
-  const groupedByDate = useMemo(() => {
-    const map = {};
-    for (const item of lists[tab] || []) {
-      const dateStr = toISODate(item) || "No date";
-      if (!map[dateStr]) map[dateStr] = [];
-      map[dateStr].push(item);
-    }
-    const arr = Object.entries(map)
-      .map(([date, items]) => ({ date, items }))
-      .sort((a, b) => {
-        if (a.date === "No date") return 1;
-        if (b.date === "No date") return -1;
-        return b.date.localeCompare(a.date);
-      });
-    return arr;
-  }, [lists, tab]);
 
   const totals = useMemo(() => {
     const totalFiltered = filteredRecords.length;
@@ -516,25 +487,23 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
   }, [filteredRecords, lists, tab]);
 
   const handleExportFiltered = () => {
-    const rows = filteredRecords.map((r) => {
-      const base = {
-        id: r.id || "",
-        fullName: r.fullName || r.passenger?.fullName || "",
-        passport: r.passport || r.passportNumber || "",
-        phone: r.phone || "",
-        email: r.email || r.userEmail || r.createdByEmail || "",
-        type: tab,
-        date: toISODate(r) || "",
-        country: r.country || r.to || "",
-        from: r.from || "",
-        to: r.to || "",
-        payable: r.payable || r.totalFee || r.price || "",
-        status: r.status || r.paymentStatus || r.visaStatus || "",
-        vendor: r.vendor || r.airlinePref || "",
-        extra: JSON.stringify(r),
-      };
-      return base;
-    });
+    const rows = filteredRecords.map((r) => ({
+      id: r.id || "",
+      fullName: r.fullName || r.passenger?.fullName || "",
+      passport: r.passport || r.passportNumber || "",
+      phone: r.phone || "",
+      email: r.email || r.userEmail || r.createdByEmail || "",
+      type: tab,
+      date: toISODate(r) || "",
+      country: r.country || r.to || "",
+      from: r.from || "",
+      to: r.to || "",
+      payable: r.payable || r.totalFee || r.price || "",
+      received: r.receivedFee || "",
+      status: r.status || r.paymentStatus || r.visaStatus || "",
+      vendor: r.vendor || r.airlinePref || "",
+      extra: JSON.stringify(r),
+    }));
     exportToCSV(
       `${email}_${tab}_export_${new Date().toISOString().slice(0, 10)}.csv`,
       rows
@@ -556,11 +525,7 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
             <div className="text-purple-400 font-semibold truncate text-lg">
               {email}
             </div>
-            <button
-              onClick={onClose}
-              title="Close panel"
-              className="ml-3 text-lg text-gray-500 hover:text-white transition"
-            >
+            <button onClick={onClose} title="Close panel" className="ml-3 text-lg text-gray-500 hover:text-white transition">
               <FaTimes />
             </button>
           </div>
@@ -572,23 +537,13 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
           <div className="text-sm text-gray-400 mr-2">
             <div>
-              Showing{" "}
-              <span className="font-semibold text-white">
-                {totals.totalFiltered}
-              </span>{" "}
-              of <span className="text-gray-500">{totals.totalAll}</span>{" "}
-              {tab} records
+              Showing <span className="font-semibold text-white">{totals.totalFiltered}</span> of <span className="text-gray-500">{totals.totalAll}</span> {tab} records
             </div>
             <div className="text-xs text-gray-500">
               Use search/date filters to narrow results
             </div>
           </div>
-
-          <button
-            onClick={handleExportFiltered}
-            className="flex items-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm shadow hover:brightness-95 transition transform hover:scale-105"
-            title="Export filtered records to CSV"
-          >
+          <button onClick={handleExportFiltered} className="flex items-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm shadow hover:brightness-95 transition transform hover:scale-105" title="Export filtered records to CSV">
             <FaDownload /> Export
           </button>
         </div>
@@ -606,10 +561,7 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
                 : "bg-gray-700 text-gray-300 hover:bg-gray-600"
             }`}
           >
-            {t.toUpperCase()}{" "}
-            <span className="ml-2 text-xs text-gray-500">
-              ({(lists[t] || []).length})
-            </span>
+            {t.toUpperCase()} <span className="ml-2 text-xs text-gray-500">({(lists[t] || []).length})</span>
           </button>
         ))}
       </div>
@@ -618,59 +570,26 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <div className="relative flex-1 min-w-[220px]">
           <FaSearch className="absolute left-3 top-3.5 text-gray-500" />
-          <input
-            value={localSearch}
-            onChange={(e) => setLocalSearch(e.target.value)}
-            placeholder="Search inside this employee..."
-            className="w-full pl-10 pr-3 py-3 rounded-xl border text-sm shadow-inner outline-none bg-gray-900 text-white border-gray-700 focus:ring-2 focus:ring-purple-500"
-          />
+          <input value={localSearch} onChange={(e) => setLocalSearch(e.target.value)} placeholder="Search inside this employee..." className="w-full pl-10 pr-3 py-3 rounded-xl border text-sm shadow-inner outline-none bg-gray-900 text-white border-gray-700 focus:ring-2 focus:ring-purple-500"/>
         </div>
-
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 text-sm text-gray-400">
-            <FaCalendarAlt />
-            <span className="text-xs">From</span>
-          </label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="border rounded-lg px-3 py-2 text-sm shadow-sm bg-gray-900 text-gray-300 border-gray-700"
-          />
+          <label className="flex items-center gap-2 text-sm text-gray-400"><FaCalendarAlt /><span className="text-xs">From</span></label>
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border rounded-lg px-3 py-2 text-sm shadow-sm bg-gray-900 text-gray-300 border-gray-700"/>
         </div>
-
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 text-sm text-gray-400">
-            <FaCalendarAlt />
-            <span className="text-xs">To</span>
-          </label>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="border rounded-lg px-3 py-2 text-sm shadow-sm bg-gray-900 text-gray-300 border-gray-700"
-          />
+          <label className="flex items-center gap-2 text-sm text-gray-400"><FaCalendarAlt /><span className="text-xs">To</span></label>
+          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border rounded-lg px-3 py-2 text-sm shadow-sm bg-gray-900 text-gray-300 border-gray-700"/>
         </div>
-
         <div className="flex items-center gap-2">
           {startDate || endDate ? (
-            <button
-              onClick={handleClearDates}
-              className="px-3 py-2 rounded-lg bg-gray-700 text-gray-300 border border-gray-600 text-sm shadow-sm hover:bg-gray-600 transition"
-              title="Clear date filters"
-            >
+            <button onClick={handleClearDates} className="px-3 py-2 rounded-lg bg-gray-700 text-gray-300 border border-gray-600 text-sm shadow-sm hover:bg-gray-600 transition" title="Clear date filters">
               Clear
             </button>
           ) : null}
         </div>
-
         <div className="ml-auto flex items-center gap-2">
           <label className="text-sm text-gray-400 mr-2">View:</label>
-          <button
-            onClick={() => setGroupByDateView((s) => !s)}
-            className="px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 text-gray-300 text-sm shadow-sm hover:bg-gray-600 transition"
-            title="Toggle grouped / flat"
-          >
+          <button onClick={() => setGroupByDateView((s) => !s)} className="px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 text-gray-300 text-sm shadow-sm hover:bg-gray-600 transition" title="Toggle grouped / flat">
             {groupByDateView ? "Grouped by date" : "Flat list"}
           </button>
         </div>
@@ -679,9 +598,9 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
       {/* Records area */}
       <div className="space-y-4">
         {groupByDateView ? (
-          groupedFilteredView(lists[tab] || [], localSearch, startDate, endDate)
+          groupedFilteredView(lists[tab] || [], localSearch, startDate, endDate, onRecordSelect)
         ) : (
-          <FlatList records={filteredRecords} tab={tab} />
+          <FlatList records={filteredRecords} tab={tab} onViewDetails={onRecordSelect} />
         )}
       </div>
     </div>
@@ -690,7 +609,7 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
 
 /* ------------------------------- Grouped view helper ------------------------------- */
 
-function groupedFilteredView(list, localSearch, startDate, endDate) {
+function groupedFilteredView(list, localSearch, startDate, endDate, onViewDetails) {
   const map = {};
   for (const item of list) {
     const date = toISODate(item) || "No date";
@@ -711,25 +630,11 @@ function groupedFilteredView(list, localSearch, startDate, endDate) {
           .filter((item) => {
             const q = localSearch.trim().toLowerCase();
             const text = (
-              (item.fullName || "") +
-              " " +
-              (item.passenger?.fullName || "") +
-              " " +
-              (item.passport || item.passportNumber || "") +
-              " " +
-              (item.country || "") +
-              " " +
-              (item.to || "") +
-              " " +
-              (item.from || "") +
-              " " +
-              (item.vendor || "") +
-              " " +
-              (item.pnr || "") +
-              " " +
-              (item.phone || "")
+              (item.fullName || "") + " " + (item.passenger?.fullName || "") + " " +
+              (item.passport || item.passportNumber || "") + " " +
+              (item.country || "") + " " + (item.to || "") + " " + (item.from || "") + " " +
+              (item.vendor || "") + " " + (item.pnr || "") + " " + (item.phone || "")
             ).toLowerCase();
-
             if (q && !text.includes(q)) return false;
             const ds = toISODate(item);
             if (!ds) {
@@ -743,12 +648,8 @@ function groupedFilteredView(list, localSearch, startDate, endDate) {
             const da = toISODate(a) || "";
             const db = toISODate(b) || "";
             if (da === db) {
-              const ta =
-                a.createdAt?.seconds ||
-                (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
-              const tb =
-                b.createdAt?.seconds ||
-                (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
+              const ta = a.createdAt?.seconds || (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
+              const tb = b.createdAt?.seconds || (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
               return tb - ta;
             }
             return db.localeCompare(da);
@@ -766,10 +667,9 @@ function groupedFilteredView(list, localSearch, startDate, endDate) {
                 {items.length} record{items.length !== 1 ? "s" : ""}
               </div>
             </div>
-
             <div className="space-y-3">
               {items.map((r) => (
-                <RecordCard key={r.id || JSON.stringify(r)} r={r} />
+                <RecordCard key={r.id || JSON.stringify(r)} r={r} onViewDetails={onViewDetails} />
               ))}
             </div>
           </div>
@@ -781,28 +681,32 @@ function groupedFilteredView(list, localSearch, startDate, endDate) {
 
 /* ------------------------------- Flat List ------------------------------- */
 
-function FlatList({ records, tab }) {
+function FlatList({ records, tab, onViewDetails }) {
   if (!records || records.length === 0) {
     return <div className="text-center py-8 text-gray-500">No records found</div>;
   }
   return (
     <div className="space-y-3">
-      {records.map((r) => (
-        <RecordCard key={r.id || JSON.stringify(r)} r={r} />
+      {records.map((r,index) => (
+        <RecordCard key={r.id || JSON.stringify(r)} r={r} onViewDetails={onViewDetails} />
       ))}
     </div>
   );
 }
 
-/* ------------------------------- Single Record Card ------------------------------- */
+/* ------------------------------- Single Record Card (UPDATED) ------------------------------- */
 
-function RecordCard({ r }) {
-  const label = r.country || r.to || r.vendor || r.airlinePref || r.from || "Record";
+function RecordCard({ r, onViewDetails }) {
+  // Calculate financial figures
+  const payable = parseFloat(r.payable || r.totalFee || r.price || 0);
+  const received = parseFloat(r.receivedFee || 0);
+  const profit = payable - received;
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 shadow-sm hover:shadow-lg transform transition duration-200">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="min-w-0">
+    <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 shadow-sm hover:border-purple-500 transition-all duration-200">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        {/* Left side: Passenger Info */}
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3 flex-wrap">
             <div className="text-sm font-semibold text-white truncate">
               {r.fullName || r.passenger?.fullName || "—"}
@@ -811,22 +715,118 @@ function RecordCard({ r }) {
               {r.passport || r.passportNumber || ""}
             </div>
           </div>
-
           <div className="text-xs text-gray-400 mt-2">
             {r.country ? <span>{r.country} • </span> : null}
             {r.from && r.to ? <span>{r.from} → {r.to} • </span> : null}
-            {r.departure ? <span>Departure: {r.departure} • </span> : null}
-            {r.date ? <span>Date: {r.date} • </span> : null}
-            <span>Status: <b className="text-purple-400">{r.status || r.visaStatus || r.paymentStatus || "N/A"}</b></span>
+            <span>Status: <b className="font-semibold text-purple-400">{r.status || r.visaStatus || r.paymentStatus || "N/A"}</b></span>
           </div>
         </div>
 
-        <div className="flex flex-col items-start sm:items-end gap-1 mt-2 sm:mt-0">
-          <div className="text-xs text-gray-500">Payable</div>
-          <div className="font-semibold text-sky-400 text-lg">
-            {r.payable || r.totalFee || r.price || "0"}
+        {/* Right side: Financials & Actions */}
+        <div className="flex">
+          <div className="flex justify-center items-center gap-6 text-center mr-4">
+            <div>
+              <div className="text-xs text-gray-500">Payable</div>
+              <div className="font-semibold text-sky-400 text-lg">{payable.toLocaleString()}</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500">Received</div>
+              <div className="font-semibold text-green-400 text-lg">{received.toLocaleString()}</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500">Profit</div>
+              <div className={`font-semibold text-lg ${profit >= 0 ? 'text-yellow-400' : 'text-red-500'}`}>{profit.toLocaleString()}</div>
+            </div>
           </div>
-          <div className="text-xs text-gray-500">{label}</div>
+          <button 
+            onClick={() => onViewDetails(r)}
+            title="View Details"
+            className="p-3 flex-end bg-gray-700 rounded-lg text-gray-300 hover:bg-purple-600 hover:text-white transition"
+          >
+            <FaEye />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+/* ------------------------------- NEW: Record Detail Modal ------------------------------- */
+
+function RecordDetailModal({ record, onClose }) {
+  if (!record) return null;
+
+  // Function to render a detail row, avoiding empty ones
+  const DetailRow = ({ label, value }) => {
+    if (value === null || value === undefined || value === "") return null;
+    return (
+      <div className="py-2">
+        <div className="text-xs font-medium text-gray-400 uppercase tracking-wider">{label}</div>
+        <div className="text-md text-white">{String(value)}</div>
+      </div>
+    );
+  };
+  
+  // Financial calculations
+  const payable = parseFloat(record.payable || record.totalFee || record.price || 0);
+  const received = parseFloat(record.receivedFee || 0);
+  const profit = payable - received;
+
+  return (
+    <div 
+      className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 animate-fade-in"
+      onClick={onClose}
+    >
+      <div 
+        className="w-full max-w-2xl bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal Header */}
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className="text-xl font-bold text-white">{record.fullName || record.passenger?.fullName || "Record Details"}</h3>
+            <p className="text-sm text-purple-400">{record.passport || record.passportNumber}</p>
+          </div>
+          <button onClick={onClose} className="text-2xl text-gray-500 hover:text-white transition">
+            <FaTimes />
+          </button>
+        </div>
+
+        {/* Financial Summary */}
+        <div className="grid grid-cols-3 gap-4 bg-gray-900 p-4 rounded-lg mb-6 text-center">
+            <div>
+              <div className="text-sm text-gray-400">Payable</div>
+              <div className="font-bold text-2xl text-sky-400">{payable.toLocaleString()}</div>
+            </div>
+            <div>
+              <div className="text-sm text-gray-400">Received</div>
+              <div className="font-bold text-2xl text-green-400">{received.toLocaleString()}</div>
+            </div>
+            <div>
+              <div className="text-sm text-gray-400">Profit</div>
+              <div className={`font-bold text-2xl ${profit >= 0 ? 'text-yellow-400' : 'text-red-500'}`}>{profit.toLocaleString()}</div>
+            </div>
+        </div>
+
+        {/* All Details */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+          <DetailRow label="Record Type" value={record.__type?.toUpperCase()} />
+          <DetailRow label="Date" value={toISODate(record)} />
+          <DetailRow label="Status" value={record.status || record.visaStatus || record.paymentStatus} />
+          <DetailRow label="Country / Destination" value={record.country || record.to} />
+          <DetailRow label="Origin" value={record.from} />
+          <DetailRow label="Phone" value={record.phone} />
+          <DetailRow label="Email" value={record.email} />
+          <DetailRow label="Vendor / Airline" value={record.vendor || record.airlinePref} />
+          <DetailRow label="PNR" value={record.pnr} />
+          <DetailRow label="Visa Type" value={record.visaType} />
+        </div>
+        
+        <div className="mt-6 text-right">
+          <button onClick={onClose} className="bg-purple-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-purple-700 transition">
+            Close
+          </button>
         </div>
       </div>
     </div>
