@@ -36,6 +36,7 @@ export default function Bookings() {
     receivedFee: "",
     remainingFee: "",
     profit: "", // 👈 NEW
+    reference: "",
     paymentStatus: "",
     country: "",
     visaStatus: "",
@@ -148,6 +149,7 @@ export default function Bookings() {
         remainingFee: Number(form.remainingFee),
         profit: Number(form.profit), // 👈 Save profit
         embassyFee: Number(form.embassyFee),
+        reference: form.reference,
         vendorFee: form.visaType === "Appointment" ? Number(form.vendorFee) : 0,
         userId: user.uid,
         userEmail: user.email,
@@ -179,6 +181,7 @@ export default function Bookings() {
         remarks: "",
         vendor: "",
         vendorContact: "",
+        reference: "",
         vendorFee: "",
       });
       setErrors({});
@@ -222,6 +225,7 @@ export default function Bookings() {
       icon: FaCreditCard,
     },
     { label: "Embassy Fee", name: "embassyFee", type: "number", placeholder: "0", icon: FaDollarSign },
+    { label: "Reference", name: "reference", type: "text", placeholder: "Wajahat Ali", icon: FaLink },
     { label: "Email", name: "email", type: "email", placeholder: "john.doe@example.com", icon: FaAt },
     { label: "Phone", name: "phone", type: "text", placeholder: "03XXXXXXXXX", icon: FaPhone },
     { label: "Reference", name: "reference", type: "text", placeholder: "Wajahat Ali", icon: FaLink },
