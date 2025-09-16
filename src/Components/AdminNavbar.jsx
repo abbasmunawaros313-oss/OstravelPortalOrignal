@@ -32,7 +32,7 @@ function AdminNavbar() {
             to={"/admin-dashboard"}
             className="text-gray-700 font-medium hover:text-blue-600 transition"
           >
-            Dashboard
+            Dashboard 📊
           </Link>
           <Link
             to={"/AdminTicketBookings"}
