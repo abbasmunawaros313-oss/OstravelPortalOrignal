@@ -78,7 +78,7 @@ export default function SendEmailPage() {
 
     try {
      const res = await fetch(
-  "http://localhost:5000/send-email",
+  "https://email-backend-production-2e52.up.railway.app/send-email",
   {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -90,6 +90,7 @@ export default function SendEmailPage() {
     }),
   }
 );
+
 
 
       const data = await res.json();
