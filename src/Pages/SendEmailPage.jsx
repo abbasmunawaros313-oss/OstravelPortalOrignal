@@ -13,7 +13,12 @@ export default function SendEmailPage() {
   const [body, setBody] = useState("Dear {{name}},\n\n");
   const [recipients, setRecipients] = useState([]);
 
-  // ✅ Load all customers’ emails (not employees)
+  // ✅ For filtering/batching
+  const [startIndex, setStartIndex] = useState(0);
+  const [endIndex, setEndIndex] = useState(10);
+  const [sendAll, setSendAll] = useState(false);
+
+  // ✅ Load customers
   useEffect(() => {
     const collections = ["bookings", "ticketBookings", "ummrahBookings"];
     const unsubscribers = [];
@@ -34,14 +39,12 @@ export default function SendEmailPage() {
         const normalized = filtered.map((r) => ({
           id: r.id,
           name: r.fullName || r.passenger?.fullName || "Unnamed",
-          email: (r.email || "").trim(), // ✅ Customer email only
+          email: (r.email || "").trim(),
           phone: r.phone || r.contact || "",
         }));
 
-        // ✅ Combine across all collections
         setRecipients((prev) => {
           const all = [...prev, ...normalized];
-          // Remove duplicates by id+email
           const map = {};
           all.forEach((x) => {
             if (x.email) map[x.id + "_" + x.email] = x;
@@ -55,19 +58,61 @@ export default function SendEmailPage() {
     return () => unsubscribers.forEach((u) => u());
   }, [country]);
 
-  const handleSend = () => {
+  // ✅ Filter recipients by range or all
+  const filteredRecipients = sendAll
+    ? recipients
+    : recipients.slice(startIndex, endIndex);
+
+  // ✅ Send Emails via backend
+  const handleSend = async () => {
     if (!subject.trim() || !body.trim()) {
       toast.error("Subject and body are required");
       return;
     }
-    toast.success(`Emails sent to ${recipients.length} customers`);
+
+    if (!filteredRecipients.length) {
+      toast.error("No recipients selected");
+      return;
+    }
+
+    try {
+     const res = await fetch("https://email-backend-production-2e52.up.railway.app/send-email", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    subject,
+    body,
+    recipients: filteredRecipients,
+  }),
+});
+
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success(
+          `✅ Sent ${data.sent} emails successfully ${
+            sendAll
+              ? "(All)"
+              : `(from ${startIndex + 1} to ${Math.min(
+                  endIndex,
+                  recipients.length
+                )})`
+          }`
+        );
+      } else {
+        toast.error("❌ Failed to send emails");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("⚠️ Error connecting to email server");
+    }
   };
 
   const handleExportCSV = () => {
-    if (!recipients.length) return;
+    if (!filteredRecipients.length) return;
     const rows = [
       ["Name", "Email", "Phone"],
-      ...recipients.map((r) => [r.name, r.email, r.phone]),
+      ...filteredRecipients.map((r) => [r.name, r.email, r.phone]),
     ];
     const csv = rows.map((r) => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -124,7 +169,7 @@ export default function SendEmailPage() {
           />
         </div>
 
-        <div className="flex space-x-3">
+        <div className="flex space-x-3 mb-6">
           <button
             onClick={handleSend}
             className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded"
@@ -141,12 +186,57 @@ export default function SendEmailPage() {
             Clear
           </button>
         </div>
+
+        {/* Filter Section */}
+        <div className="bg-gray-700 p-4 rounded-lg flex items-center space-x-3">
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={sendAll}
+              onChange={() => setSendAll(!sendAll)}
+            />
+            <span>Send to All</span>
+          </label>
+
+          {!sendAll && (
+            <>
+              <label>From:</label>
+              <input
+                type="number"
+                min={1}
+                max={recipients.length}
+                value={startIndex + 1}
+                onChange={(e) => setStartIndex(Number(e.target.value) - 1)}
+                className="w-20 p-2 rounded bg-gray-900 border border-gray-600"
+              />
+              <label>To:</label>
+              <input
+                type="number"
+                min={1}
+                max={recipients.length}
+                value={endIndex}
+                onChange={(e) => setEndIndex(Number(e.target.value))}
+                className="w-20 p-2 rounded bg-gray-900 border border-gray-600"
+              />
+            </>
+          )}
+
+          <span className="text-gray-300">
+            Showing{" "}
+            {sendAll
+              ? `All (${recipients.length})`
+              : `${startIndex + 1} - ${Math.min(
+                  endIndex,
+                  recipients.length
+                )} of ${recipients.length}`}
+          </span>
+        </div>
       </div>
 
       {/* Recipients Table */}
       <div className="bg-gray-800 p-6 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4">
-          Customers ({recipients.length})
+          Customers ({filteredRecipients.length} of {recipients.length})
         </h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left border border-gray-700">
@@ -159,18 +249,20 @@ export default function SendEmailPage() {
               </tr>
             </thead>
             <tbody>
-              {recipients.map((r, i) => (
+              {filteredRecipients.map((r, i) => (
                 <tr key={r.id} className="hover:bg-gray-700">
-                  <td className="p-2 border border-gray-600">{i + 1}</td>
+                  <td className="p-2 border border-gray-600">
+                    {sendAll ? i + 1 : startIndex + i + 1}
+                  </td>
                   <td className="p-2 border border-gray-600">{r.name}</td>
                   <td className="p-2 border border-gray-600">{r.email}</td>
                   <td className="p-2 border border-gray-600">{r.phone}</td>
                 </tr>
               ))}
-              {!recipients.length && (
+              {!filteredRecipients.length && (
                 <tr>
                   <td colSpan="4" className="text-center p-4 text-gray-400">
-                    No customers found for {country}
+                    No customers in this range
                   </td>
                 </tr>
               )}
