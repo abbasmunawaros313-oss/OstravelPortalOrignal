@@ -21,7 +21,7 @@ function AdminNavbar() {
         </Link>
 
         {/* Desktop Menu */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-5 justify-center items-center">
           <Link
             to={"/adminhome"}
             className="text-gray-700 font-medium hover:text-blue-600 transition"
@@ -103,42 +103,42 @@ function AdminNavbar() {
             className="text-gray-700 font-medium hover:text-blue-600 transition"
             onClick={() => setMenuOpen(false)}
           >
-            Home
+            Home 🏠
           </Link>
           <Link
             to={"/admin-dashboard"}
             className="text-gray-700 font-medium hover:text-blue-600 transition"
             onClick={() => setMenuOpen(false)}
           >
-            Dashboard
+            Dashboard 📊
           </Link>
           <Link
             to={"/AdminTicketBookings"}
             className="text-gray-700 font-medium hover:text-blue-600 transition"
             onClick={() => setMenuOpen(false)}
           >
-            Tickets
+            Tickets ✈️
           </Link>
           <Link
             to={"/umrahbookings"}
             className="text-gray-700 font-medium hover:text-blue-600 transition"
             onClick={() => setMenuOpen(false)}
           >
-            Umrah Bookings
+            Umrah Bookings 🕋
           </Link>
            <Link
             to={"/adminHotelDet"}
             className="text-gray-700 font-medium hover:text-blue-600 transition"
             onClick={() => setMenuOpen(false)}
           >
-           Hotel Bookings
+           Hotel Bookings 🏨
           </Link>
           <Link
             to={"/customer-country"}
             className="text-gray-700 font-medium hover:text-blue-600 transition"
             onClick={() => setMenuOpen(false)}
           >
-            Customer Country
+            Marketing 🚀
           </Link>
         </div>
       )}
