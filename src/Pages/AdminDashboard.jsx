@@ -15,11 +15,7 @@ import {
   limit
 } from "firebase/firestore";
 import {
-  MdDashboard,
-  MdPeople,
-  MdSearch,
-  MdBarChart,
-  MdEdit,
+  MdDashboard,MdPeople,MdSearch,MdBarChart,MdEdit,
   MdDelete,
   MdVisibility,
   MdDownload,
@@ -42,7 +38,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Link, useNavigate } from "react-router-dom";
 import AdminNavbar from "../Components/AdminNavbar";
-
+import Footer from "../Components/Footer";
 export default function AdminDashboard() {
   const { user, isAdmin, logout } = useAuth();
   const [allBookings, setAllBookings] = useState([]);
@@ -580,7 +576,7 @@ const isWithinTimeRange = (bookingDate, filter) => {
               </div>
             </div>
           </div>
-           <div className="bg-white rounded-xl shadow-sm p-6 border-4 border-green-500">
+           <div className="bg-white rounded-xl shadow-sm p-6 border-2 border-green-500">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600"> Profit</p>
@@ -610,117 +606,8 @@ const isWithinTimeRange = (bookingDate, filter) => {
 
 
         {/* Quick Stats Summary */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Summary</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{employees.length}</div>
-              <div className="text-sm text-gray-600">Active Employees</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {employees.length > 0 ? Math.round(employees.reduce((sum, emp) => sum + emp.performance, 0) / employees.length) : 0}%
-              </div>
-              <div className="text-sm text-gray-600">Avg. Success Rate</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
-                {employees.length > 0 ? Math.round(employees.reduce((sum, emp) => sum + emp.totalBookings, 0) / employees.length) : 0}
-              </div>
-              <div className="text-sm text-gray-600">Avg. Bookings/Employee</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
-                {new Set(allBookings.map(b => b.country).filter(Boolean)).size}
-              </div>
-              <div className="text-sm text-gray-600">Countries Served</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Employee Overview Cards */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Employee Overview</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {loading ? (
-              <div className="col-span-full flex items-center justify-center py-8">
-                <div className="flex items-center">
-                  <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Loading employee data...
-                </div>
-              </div>
-            ) : employees.length === 0 ? (
-              <div className="col-span-full text-center py-8 text-gray-500">
-                No employee data available
-              </div>
-            ) : (
-              employees.map(employee => (
-                <div key={employee.email} className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-all">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <MdPeople className="text-blue-600 text-lg" />
-                      </div>
-                      <div className="ml-3">
-                        <h4 className="font-semibold text-gray-900">{employee.email.split('@')[0]}</h4>
-                        <p className="text-xs text-gray-500">{employee.email}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-lg font-bold ${
-                        employee.performance >= 80 ? 'text-green-600' :
-                        employee.performance >= 60 ? 'text-yellow-600' : 'text-red-600'
-                      }`}>
-                        {employee.performance}%
-                      </div>
-                      <div className="text-xs text-gray-500">Success</div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3 text-sm mb-3">
-                    <div>
-                      <div className="text-gray-500 text-xs">Total Clients</div>
-                      <div className="font-semibold text-gray-900">{employee.totalBookings}</div>
-                    </div>
-                    <div>
-                      <div className="text-gray-500 text-xs">Approved</div>
-                      <div className="font-semibold text-green-600">{employee.approvedVisas}</div>
-                    </div>
-                    <div>
-                      <div className="text-gray-500 text-xs">Revenue</div>
-                      <div className="font-semibold text-gray-900">{employee.totalRevenue.toLocaleString()}</div>
-                    </div>
-                    <div>
-                      <div className="text-gray-500 text-xs">Countries</div>
-                      <div className="font-semibold text-gray-900">{employee.countries.length}</div>
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-3">
-                    <div className="text-xs text-gray-500 mb-2">Recent Clients:</div>
-                    <div className="space-y-1">
-                      {allBookings
-                        .filter(booking => booking.userEmail === employee.email)
-                        .slice(0, 3)
-                        .map(booking => (
-                          <div key={booking.id} className="text-xs text-gray-600 flex justify-between">
-                            <span className="truncate">{booking.fullName || 'N/A'}</span>
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              booking.visaStatus === 'Approved' ? 'bg-green-100 text-green-800' :
-                              booking.visaStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {booking.visaStatus || 'N/A'}
-                            </span>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+       
+       
 
         {/* Filters and Search */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 mb-8">
@@ -1179,7 +1066,7 @@ const isWithinTimeRange = (bookingDate, filter) => {
                 <p className="text-sm text-gray-900">PKR: {selectedBooking.profit || "0"}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Reference</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Embassy Fee</label>
                 <p className="text-sm text-gray-900">{selectedBooking.embassyFee || "Not set"}</p>
               </div>
               
@@ -1214,6 +1101,7 @@ const isWithinTimeRange = (bookingDate, filter) => {
         </div>
       )}
     </div>
+    <Footer/>
     </>
   );
 }
