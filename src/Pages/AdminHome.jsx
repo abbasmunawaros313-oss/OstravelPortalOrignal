@@ -20,107 +20,19 @@ import Footer from "../Components/Footer";
 
 // ... (COUNTRY_TO_ISO, isoToFlagEmoji, getFlag, exportToCSV, SparkBars functions remain the same)
 const COUNTRY_TO_ISO = {
-  Pakistan: "PK",
-  Saudi: "SA",
-  "Saudi Arabia": "SA",
-  UAE: "AE",
-  "United Arab Emirates": "AE",
-  Thailand: "TH",
-  "United Kingdom": "GB",
-  UK: "GB",
-  England: "GB",
-  USA: "US",
-  "United States": "US",
-  Canada: "CA",
-  Turkey: "TR",
-  Malaysia: "MY",
-  India: "IN",
-  Germany: "DE",
-  France: "FR",
-  Italy: "IT",
-  Spain: "ES",
-  Australia: "AU",
-  China: "CN",
-  Japan: "JP",
-  Singapore: "SG",
-  Brazil: "BR",
-  Mexico: "MX",
-  Russia: "RU",
-  Egypt: "EG",
-  Nigeria: "NG",
-  Kenya: "KE",
-  SouthAfrica: "ZA",
-  "South Africa": "ZA",
-  Vietnam: "VN",
-  Indonesia: "ID",
-  Philippines: "PH",
-  Argentina: "AR",
-  Chile: "CL",
-  Colombia: "CO",
-  Peru: "PE",
-  Netherlands: "NL",
-  Belgium: "BE",
-  Sweden: "SE",
-  Norway: "NO",
-  Finland: "FI",
-  Denmark: "DK",
-  Switzerland: "CH",
-  Austria: "AT",
-  Poland: "PL",
-  Portugal: "PT",
-  Greece: "GR",
-  Ireland: "IE",
-  NewZealand: "NZ",
-  "New Zealand": "NZ",
-  Hungary: "HU",
-  Czechia: "CZ",
-  "Czech Republic": "CZ",
-  Romania: "RO",
-  Bulgaria: "BG",
-  Croatia: "HR",
-  Serbia: "RS",
-  Ukraine: "UA",
-  Belarus: "BY",
-  Lithuania: "LT",
-  Latvia: "LV",
-  Estonia: "EE",
-  Iceland: "IS",
-  Luxembourg: "LU",
-  Slovenia: "SI",
-  Slovakia: "SK",
-  Cyprus: "CY",
-  Malta: "MT",
-  Thailand: "TH",
-  Vietnam: "VN",
-  Indonesia: "ID",
-  Philippines: "PH",
-  Bangladesh: "BD",
-  SriLanka: "LK",
-  "Sri Lanka": "LK",
-  Nepal: "NP",
-  Myanmar: "MM",
-  Cambodia: "KH",
-  Laos: "LA",
-  Mongolia: "MN",
-  Iran: "IR",
-  Iraq: "IQ",
-  Afghanistan: "AF",
-  Azerbaijan: "AZ",
-  Armenia: "AM",
-  Georgia: "GE",
-  Kazakhstan: "KZ",
-  Uzbekistan: "UZ",
-  Turkmenistan: "TM",
-  Kyrgyzstan: "KG",
-  Tajikistan: "TJ",
-  Turkmenistan: "TM",
-  SaudiArabia: "SA",
-  UAE: "AE",
-  Kuwait: "KW",
-  Qatar: "QA",
-  Bahrain: "BH",
-  Oman: "OM",
-  Yemen: "YE",
+  Pakistan: "PK", Saudi: "SA","Saudi Arabia": "SA", UAE: "AE", "United Arab Emirates": "AE", Thailand: "TH",
+  "United Kingdom": "GB",UK: "GB",England: "GB",USA: "US", "United States": "US",Canada: "CA",Turkey: "TR",Malaysia: "MY",
+  India: "IN", Germany: "DE", France: "FR", Italy: "IT", Spain: "ES", Australia: "AU",China: "CN",Japan: "JP",
+  Singapore: "SG",Brazil: "BR", Mexico: "MX",Russia: "RU",Egypt: "EG",Nigeria: "NG",Kenya: "KE",SouthAfrica: "ZA","South Africa": "ZA",Vietnam: "VN",
+  Indonesia: "ID", Philippines: "PH", Argentina: "AR", Chile: "CL", Colombia: "CO",Peru: "PE",Netherlands: "NL",Belgium: "BE",Sweden: "SE",
+  Norway: "NO",Finland: "FI", Denmark: "DK",  Switzerland: "CH",  Austria: "AT",
+  Poland: "PL", Portugal: "PT",  Greece: "GR",  Ireland: "IE",  NewZealand: "NZ",  "New Zealand": "NZ",
+  Hungary: "HU", Czechia: "CZ", "Czech Republic": "CZ", Romania: "RO", Bulgaria: "BG", Croatia: "HR", Serbia: "RS",  Ukraine: "UA", Belarus: "BY", Lithuania: "LT",  Latvia: "LV", Estonia: "EE",  Iceland: "IS",  Luxembourg: "LU",  Slovenia: "SI",  Slovakia: "SK",  Cyprus: "CY",  Malta: "MT",
+  Thailand: "TH",Vietnam: "VN",Indonesia: "ID",Philippines: "PH",Bangladesh: "BD",SriLanka: "LK","Sri Lanka": "LK",Nepal: "NP",
+  Myanmar: "MM",Cambodia: "KH",Laos: "LA",Mongolia: "MN",Iran: "IR",Iraq: "IQ",Afghanistan: "AF",
+  Azerbaijan: "AZ", Armenia: "AM", Georgia: "GE",
+  Kazakhstan: "KZ",Uzbekistan: "UZ",Turkmenistan: "TM",Kyrgyzstan: "KG",Tajikistan: "TJ",Turkmenistan: "TM",
+  SaudiArabia: "SA",UAE: "AE",Kuwait: "KW",Qatar: "QA", Bahrain: "BH", Oman: "OM", Yemen: "YE",
   
 };
 
@@ -289,15 +201,13 @@ export default function AdminHome() {
   // <<--- 2. PREPARE THE DATA TO RENDER ---
   const INITIAL_COUNTRY_LIMIT = 8;
   const countryKeys = Object.keys(countries);
-
   const countriesToShow = useMemo(() => {
     if (showAllCountries) {
       return countryKeys;
     }
     return countryKeys.slice(0, INITIAL_COUNTRY_LIMIT);
   }, [countryKeys, showAllCountries]);
-
-  // Global filtered list (for maybe search page)
+// Global filtered list (for maybe search page)
   const globalFiltered = useMemo(() => {
     if (!globalSearch.trim()) return bookings;
     const q = globalSearch.trim().toLowerCase();
@@ -317,23 +227,19 @@ export default function AdminHome() {
         .includes(q)
     );
   }, [bookings, globalSearch]);
-
   const onEmployeeClick = (emp) => {
     setSelectedCountry(null);
     setSelectedEmployee((prev) => (prev === emp ? null : emp));
     setCountrySearch("");
   };
-
   const onCountryClick = (country) => {
     setSelectedEmployee(null);
     setSelectedCountry((prev) => (prev === country ? null : country));
     setCountrySearch("");
   };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50 flex flex-col">
       <AdminNavbar />
-
       <div className="max-w-7xl mx-auto w-full p-6">
         {/* Top header / search */}
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4 justify-between mb-8">
@@ -356,7 +262,6 @@ export default function AdminHome() {
                 className="w-full pl-10 pr-4 py-3 rounded-xl shadow-sm border border-slate-200 focus:border-blue-300 outline-none"
               />
             </div>
-
             <button
               onClick={() =>
                 exportToCSV(
@@ -380,10 +285,8 @@ export default function AdminHome() {
             </button>
           </div>
         </div>
-
         {/* Summary Quick Cards */}
-        <div className="grid md:grid-cols-4 gap-6 mb-10">
-        
+        <div className="grid md:grid-cols-4 gap-6 mb-10">       
           <div className="rounded-xl shadow-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white p-6 flex flex-col justify-between">
           <Link to="/employee-record">
             <div className="flex items-start gap-4">
@@ -404,9 +307,7 @@ export default function AdminHome() {
               </div>
             </div>
                   </Link>
-
-          </div>
-        
+          </div>       
           <div
           onClick={() => {
     if (countriesRef.current) {
@@ -433,7 +334,6 @@ export default function AdminHome() {
                 .join(" • ")}
             </div>
           </div>
-
           <div className="rounded-xl shadow-lg bg-gradient-to-br from-fuchsia-500 to-pink-600 text-white p-6 flex flex-col justify-between">
             <Link to={"/employee-record"} className="flex items-start gap-4">
             <div className="flex items-start gap-4">
@@ -451,7 +351,6 @@ export default function AdminHome() {
             </div>
             </Link>
           </div>
-
           <div className="rounded-xl shadow-lg bg-gradient-to-br from-yellow-400 to-amber-500 text-white p-6 flex flex-col justify-between">
             <div className="flex items-start gap-4">
               <div className="w-14 h-14 rounded-lg bg-white/20 flex items-center justify-center text-2xl">
@@ -484,107 +383,76 @@ export default function AdminHome() {
             </div>
           </div>
         </div>
-
         {/* Employees grid */}
-      
-
         {/* <<--- 3. UPDATE THE COUNTRIES SECTION --- */}
-        <section ref={countriesRef}>
-          <h2 className="text-4xl pt-4 font-semibold mb-6 text-center border-b pb-2">Countries</h2>
-          {loading ? (
-            <div className="text-center py-12">Loading...</div>
-          ) : (
-            <>
-              <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {countriesToShow.map((country) => {
-                  const list = countries[country];
-                  return (
-                    <Link
-                      key={country}
-                      to={`/countrywise-det/${encodeURIComponent(country)}`}
-                      className={`aspect-square rounded-xl overflow-hidden shadow-lg cursor-pointer transform transition hover:scale-105
-                        ${selectedCountry === country ? "ring-4 ring-emerald-300" : ""}
-                      `}
-                      onClick={() => onCountryClick(country)}
-                    >
-                      <div className={`w-full h-full p-4 flex flex-col justify-between ${selectedCountry === country ? "bg-gradient-to-br from-green-600 to-emerald-700 text-white" : "bg-white"}`}>
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-lg flex items-center justify-center text-xl bg-white/10">
-                            <div className="text-xl">{getFlag(country)}</div>
-                          </div>
-                          <div>
-                            <div className={`font-semibold ${selectedCountry === country ? "text-white" : "text-slate-800"}`}>{country}</div>
-                            <div className={`text-xs opacity-80 ${selectedCountry === country ? "text-white/90" : "text-slate-500"}`}>
-                              Clients: {list.length}
-                            </div>
-                          </div>
-                        </div>
+       {/* Countries grid */}
+          {/* Countries grid */}
+<section ref={countriesRef}>
+  <h2 className="text-4xl pt-4 font-semibold mb-6 text-center border-b pb-2">
+    Countries
+  </h2>
+  {loading ? (
+    <div className="text-center py-12">Loading...</div>
+  ) : (
+    <>
+      <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 ">
+        {countriesToShow.map((country, index) => {
+          const list = countries[country];
 
-                        {selectedCountry === country && (
-                          <div onClick={stop} className="mt-3 bg-white/5 p-3 rounded-md max-h-44 overflow-y-auto text-sm">
-                            <div className="relative mb-3">
-                              <FaSearch className="absolute left-3 top-3 text-gray-400" />
-                              <input
-                                value={countrySearch}
-                                onChange={(e) => setCountrySearch(e.target.value)}
-                                placeholder="Search clients in country..."
-                                className="w-full pl-10 pr-3 py-2 rounded-lg shadow-inner text-sm focus:ring-2 focus:ring-green-300 outline-none"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              {list
-                                .filter((c) => {
-                                  const q = countrySearch.trim().toLowerCase();
-                                  if (!q) return true;
-                                  return (
-                                    (c.fullName || "").toLowerCase().includes(q) ||
-                                    (c.passport || "").toLowerCase().includes(q) ||
-                                    (c.userEmail || "").toLowerCase().includes(q)
-                                  );
-                                })
-                                .map((c) => (
-                                  <div key={c.id} className="p-2 rounded bg-white/80 text-gray-800">
-                                    <div className="font-semibold">{c.fullName}</div>
-                                    <div className="text-xs opacity-80">
-                                      {c.passport} • {c.userEmail}
-                                      <button
-                                        onClick={() => setModalBooking(c)}
-                                        className="ml-3 text-xs px-2 py-1 rounded bg-slate-100"
-                                      >
-                                        Details
-                                      </button>
-                                    </div>
-                                  </div>
-                                ))}
-                            </div>
-                          </div>
-                        )}
+          // Gradient set for variety
+          const gradients = [
+            "from-indigo-500 to-purple-600",
+            "from-emerald-500 to-green-600",
+            "from-fuchsia-500 to-pink-600",
+            "from-yellow-400 to-amber-500",
+            "from-sky-500 to-cyan-600",
+            "from-orange-500 to-red-500",
+          ];
+          const gradient = gradients[index % gradients.length];
 
-                        <div className="flex justify-between items-center mt-2">
-                          <div className={`text-xs ${selectedCountry === country ? "text-white/90" : "text-slate-500"}`}>View clients</div>
-                          <div className={`text-sm font-semibold ${selectedCountry === country ? "text-white" : "text-slate-700"}`}>{list.length}</div>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-
-              {countryKeys.length > INITIAL_COUNTRY_LIMIT && (
-                <div className="mt-8 text-center">
-                  <button
-                    onClick={() => setShowAllCountries(!showAllCountries)}
-                    className="bg-gradient-to-r from-emerald-600 to-green-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:brightness-110 transition-transform transform hover:scale-105"
-                  >
-                    {showAllCountries ? 'Show Less' : `View All ${countryKeys.length} Countries`}
-                  </button>
+          return (
+            <Link
+              key={country}
+              to={`/countrywise-det/${encodeURIComponent(country)}`}
+              className={`rounded-xl shadow-lg cursor-pointer transform transition hover:scale-105 `}
+            >
+              <div
+                className={`w-full h-40 p-6 flex flex-col justify-between text-white rounded-lg bg-gradient-to-br ${gradient}`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-lg flex items-center justify-center text-2xl bg-white/20 shadow-inner">
+                    {getFlag(country)}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-xl">{country}</div>
+                    <div className="text-sm opacity-90">Clients: {list.length}</div>
+                  </div>
                 </div>
-              )}
-            </>
-          )}
-        </section>
+                <div className="text-right text-2xl font-bold">{list.length}</div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
+      {countryKeys.length > INITIAL_COUNTRY_LIMIT && (
+        <div className="mt-8 text-center">
+          <button
+            onClick={() => setShowAllCountries(!showAllCountries)}
+            className="bg-gradient-to-r from-emerald-600 to-green-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:brightness-110 transition-transform transform hover:scale-105"
+          >
+            {showAllCountries
+              ? "Show Less"
+              : `View All ${countryKeys.length} Countries`}
+          </button>
+        </div>
+      )}
+    </>
+  )}
+</section>
+
+
+      </div>
       {/* Modal for booking details */}
       {modalBooking && (
         <div
