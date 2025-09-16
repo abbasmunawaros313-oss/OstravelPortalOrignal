@@ -12,13 +12,14 @@ export default function SendEmailPage() {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("Dear {{name}},\n\n");
   const [recipients, setRecipients] = useState([]);
+  const [fileData, setFileData] = useState(null); // ✅ New: File upload
 
-  // ✅ For filtering/batching
+  // For filtering/batching
   const [startIndex, setStartIndex] = useState(0);
   const [endIndex, setEndIndex] = useState(10);
   const [sendAll, setSendAll] = useState(false);
 
-  // ✅ Load customers
+  // Load customers
   useEffect(() => {
     const collections = ["bookings", "ticketBookings", "ummrahBookings"];
     const unsubscribers = [];
@@ -58,12 +59,12 @@ export default function SendEmailPage() {
     return () => unsubscribers.forEach((u) => u());
   }, [country]);
 
-  // ✅ Filter recipients by range or all
+  // Filter recipients by range or all
   const filteredRecipients = sendAll
     ? recipients
     : recipients.slice(startIndex, endIndex);
 
-  // ✅ Send Emails via backend
+  // Send Emails via backend
   const handleSend = async () => {
     if (!subject.trim() || !body.trim()) {
       toast.error("Subject and body are required");
@@ -76,15 +77,20 @@ export default function SendEmailPage() {
     }
 
     try {
-     const res = await fetch("https://email-backend-production-2e52.up.railway.app/send-email", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    subject,
-    body,
-    recipients: filteredRecipients,
-  }),
-});
+     const res = await fetch(
+  "http://localhost:5000/send-email",
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      subject,
+      body,
+      recipients: filteredRecipients,
+      file: fileData,
+    }),
+  }
+);
+
 
       const data = await res.json();
 
@@ -169,6 +175,33 @@ export default function SendEmailPage() {
           />
         </div>
 
+        {/* ✅ File Upload */}
+        <div className="mb-4">
+          <label className="block text-gray-300 mb-1">
+            Attach File (Image/PDF)
+          </label>
+     <input
+  type="file"
+  onChange={(e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result.split(",")[1]; // strip data URL header
+      setFileData({
+        name: file.name,
+        type: file.type || "", // optional, backend has fallback
+        content: base64,
+      });
+      console.log("File ready:", file.name, file.type, base64.length, "chars");
+    };
+    reader.readAsDataURL(file);
+  }}
+/>
+
+        </div>
+
         <div className="flex space-x-3 mb-6">
           <button
             onClick={handleSend}
@@ -180,6 +213,7 @@ export default function SendEmailPage() {
             onClick={() => {
               setSubject("");
               setBody("Dear {{name}},\n\n");
+              setFileData(null); // ✅ Clear uploaded file
             }}
             className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
           >
