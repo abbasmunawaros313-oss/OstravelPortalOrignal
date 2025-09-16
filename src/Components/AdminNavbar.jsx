@@ -26,7 +26,7 @@ function AdminNavbar() {
             to={"/adminhome"}
             className="text-gray-700 font-medium hover:text-blue-600 transition"
           >
-            Home
+            Home 🏠
           </Link>
           <Link
             to={"/admin-dashboard"}
@@ -38,34 +38,34 @@ function AdminNavbar() {
             to={"/AdminTicketBookings"}
             className="text-gray-700 font-medium hover:text-blue-600 transition"
           >
-            Tickets
+            Tickets ✈️
           </Link>
           <Link
             to={"/umrahbookings"}
             className="text-gray-700 font-medium hover:text-blue-600 transition"
           >
-            Umrah Bookings
+            Umrah Bookings 🕋
           </Link>
            <Link
             to={"/adminHotelDet"}
             className="text-gray-700 font-medium hover:text-blue-600 transition"
             onClick={() => setMenuOpen(false)}
           >
-           Hotel Bookings
+           Hotel Bookings 🏨
           </Link>
          <Link
             to={"/medicalInsurancedet"}
             className="text-gray-700 font-medium hover:text-blue-600 transition"
             onClick={() => setMenuOpen(false)}
           >
-           Medical Insurance
+           Medical Insurance 🏥
           </Link>
            <Link
             to={"/customer-country"}
             className="text-gray-700 font-medium hover:text-blue-600 transition"
             onClick={() => setMenuOpen(false)}
           >
-            Customer Country
+            Marketing 🚀
           </Link>
         </div>
 
