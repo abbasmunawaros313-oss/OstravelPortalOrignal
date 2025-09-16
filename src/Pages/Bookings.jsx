@@ -228,7 +228,7 @@ export default function Bookings() {
     { label: "Reference", name: "reference", type: "text", placeholder: "Wajahat Ali", icon: FaLink },
     { label: "Email", name: "email", type: "email", placeholder: "john.doe@example.com", icon: FaAt },
     { label: "Phone", name: "phone", type: "text", placeholder: "03XXXXXXXXX", icon: FaPhone },
-    { label: "Reference", name: "reference", type: "text", placeholder: "Wajahat Ali", icon: FaLink },
+    
   ];
 
   return (
@@ -250,23 +250,12 @@ export default function Bookings() {
           <div className="flex items-center justify-center gap-4 mb-12 text-center">
             <MdFlightTakeoff className="text-blue-400 text-5xl" />
             <h1 className="text-4xl font-extrabold text-white tracking-wider">
-              Flight Operations
+             Visa Bookings
             </h1>
           </div>
 
           {/* User Info */}
-          <div className="mb-8 p-5 bg-blue-900/40 rounded-2xl border border-blue-800 flex items-center gap-4">
-            <FaUser className="text-blue-400 text-2xl" />
-            <div>
-              <p className="text-blue-200 text-sm font-semibold">
-                Logged in as: <span className="font-normal">{user?.email}</span>
-              </p>
-              <p className="text-blue-300 text-xs mt-1 italic">
-                Securely manage your bookings.
-              </p>
-            </div>
-          </div>
-
+        
           <form
             onSubmit={handleSubmit}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
