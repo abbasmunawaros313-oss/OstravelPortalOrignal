@@ -201,6 +201,7 @@ export default function EmployeeRecord() {
     });
   }, [employeeEntries, globalSearch, showOnlyWithRecords]);
 
+
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col">
       <AdminNavbar />
@@ -695,12 +696,51 @@ function FlatList({ records, tab, onViewDetails }) {
 }
 
 /* ------------------------------- Single Record Card (UPDATED) ------------------------------- */
+function getFinancials(r) {
+  let payable = 0, received = 0, remaining = 0, profit = 0, embassyFee = '-', vendorFee = 0;
 
+  switch(r.__type) {
+    case 'visa':
+      payable = parseFloat(r.totalFee || r.payable || 0);
+      received = parseFloat(r.receivedFee || 0);
+      remaining = parseFloat(r.remainingFee ?? (payable - received));
+      profit =typeof r.profit === 'number' && !isNaN(r.profit)? r.profit: 'Not entered';
+      embassyFee = typeof r.embassyFee === 'number' && !isNaN(r.embassyFee)
+  ? r.embassyFee
+  : 'Not entered';
+      vendorFee = typeof r.vendorFee === 'number' && !isNaN(r.vendorFee)
+  ? r.vendorFee
+  : '-';
+      break;
+
+    case 'ticket':
+      payable = parseFloat(r.payable );
+      received = parseFloat(r.price || 0);
+  
+      profit = parseFloat(r.profit ?? (received - payable));
+      embassyFee = '-';
+      break;
+
+    case 'umrah':
+      payable = parseFloat(r.payable || 0);
+      received = parseFloat(r.received || 0);
+      remaining= "-"
+      profit = parseFloat(r.profit ?? (payable - received));
+      embassyFee = '-';
+      break;
+
+    default:
+      payable = parseFloat(r.payable || r.totalFee || r.price || 0);
+      received = parseFloat(r.receivedFee || r.received || 0);
+      remaining = parseFloat(r.remainingFee ?? (payable - received));
+      profit = parseFloat(r.profit ?? (payable - received));
+      embassyFee = r.embassyFee || '-';
+  }
+
+  return { payable, received, remaining, profit, embassyFee };
+}
 function RecordCard({ r, onViewDetails }) {
-  // Calculate financial figures
-  const payable = parseFloat(r.payable || r.totalFee || r.price || 0);
-  const received = parseFloat(r.receivedFee || 0);
-  const profit = payable - received;
+  const { payable, received, remaining, profit, embassyFee } = getFinancials(r);
 
   return (
     <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 shadow-sm hover:border-purple-500 transition-all duration-200">
@@ -734,10 +774,22 @@ function RecordCard({ r, onViewDetails }) {
               <div className="font-semibold text-green-400 text-lg">{received.toLocaleString()}</div>
             </div>
             <div>
+              <div className="text-xs text-gray-500">Remaining</div>
+              <div className={`font-semibold text-lg ${remaining >= 0 ? 'text-yellow-400' : 'text-red-500'}`}>{remaining.toLocaleString()}</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500">Embassy fee</div>
+              <div className={`font-semibold text-lg ${typeof embassyFee === 'number' ? 'text-yellow-400' : 'text-gray-400'}`}>
+                {typeof embassyFee === 'number' ? embassyFee.toLocaleString() : embassyFee}
+              </div>
+            </div>
+            
+            <div>
               <div className="text-xs text-gray-500">Profit</div>
               <div className={`font-semibold text-lg ${profit >= 0 ? 'text-yellow-400' : 'text-red-500'}`}>{profit.toLocaleString()}</div>
             </div>
           </div>
+
           <button 
             onClick={() => onViewDetails(r)}
             title="View Details"
@@ -757,7 +809,8 @@ function RecordCard({ r, onViewDetails }) {
 function RecordDetailModal({ record, onClose }) {
   if (!record) return null;
 
-  // Function to render a detail row, avoiding empty ones
+  const { payable, received, remaining, profit, embassyFee } = getFinancials(record);
+
   const DetailRow = ({ label, value }) => {
     if (value === null || value === undefined || value === "") return null;
     return (
@@ -767,11 +820,6 @@ function RecordDetailModal({ record, onClose }) {
       </div>
     );
   };
-  
-  // Financial calculations
-  const payable = parseFloat(record.payable || record.totalFee || record.price || 0);
-  const received = parseFloat(record.receivedFee || 0);
-  const profit = payable - received;
 
   return (
     <div 
@@ -795,18 +843,18 @@ function RecordDetailModal({ record, onClose }) {
 
         {/* Financial Summary */}
         <div className="grid grid-cols-3 gap-4 bg-gray-900 p-4 rounded-lg mb-6 text-center">
-            <div>
-              <div className="text-sm text-gray-400">Payable</div>
-              <div className="font-bold text-2xl text-sky-400">{payable.toLocaleString()}</div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-400">Received</div>
-              <div className="font-bold text-2xl text-green-400">{received.toLocaleString()}</div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-400">Profit</div>
-              <div className={`font-bold text-2xl ${profit >= 0 ? 'text-yellow-400' : 'text-red-500'}`}>{profit.toLocaleString()}</div>
-            </div>
+          <div>
+            <div className="text-sm text-gray-400">Payable</div>
+            <div className="font-bold text-2xl text-sky-400">{payable.toLocaleString()}</div>
+          </div>
+          <div>
+            <div className="text-sm text-gray-400">Received</div>
+            <div className="font-bold text-2xl text-green-400">{received.toLocaleString()}</div>
+          </div>
+          <div>
+            <div className="text-sm text-gray-400">Remaining</div>
+            <div className={`font-bold text-2xl ${remaining >= 0 ? 'text-yellow-400' : 'text-red-500'}`}>{remaining.toLocaleString()}</div>
+          </div>
         </div>
 
         {/* All Details */}
@@ -817,10 +865,12 @@ function RecordDetailModal({ record, onClose }) {
           <DetailRow label="Country / Destination" value={record.country || record.to} />
           <DetailRow label="Origin" value={record.from} />
           <DetailRow label="Phone" value={record.phone} />
-          <DetailRow label="Email" value={record.email} />
+          <DetailRow label="Email" value={record.email || record.userEmail || record.createdByEmail} />
           <DetailRow label="Vendor / Airline" value={record.vendor || record.airlinePref} />
           <DetailRow label="PNR" value={record.pnr} />
           <DetailRow label="Visa Type" value={record.visaType} />
+          <DetailRow label="Embassy Fee" value={embassyFee} />
+          <DetailRow label="Profit" value={profit} />
         </div>
         
         <div className="mt-6 text-right">
@@ -832,3 +882,4 @@ function RecordDetailModal({ record, onClose }) {
     </div>
   );
 }
+
