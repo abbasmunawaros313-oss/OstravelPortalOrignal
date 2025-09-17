@@ -38,7 +38,7 @@ export default function Navbar({ userName }) {
               Bookings
             </Link>
             <Link to="/approved-visas" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-              Approved Visas
+             Visa Records
             </Link>
             <Link to="/tickiting" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
               Ticketing
