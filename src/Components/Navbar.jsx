@@ -86,7 +86,7 @@ export default function Navbar({ userName }) {
               Bookings
             </Link>
             <Link to="/approved-visas" className="text-gray-600 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">
-              Approved Visas
+              Visa Records
             </Link>
             <Link to="/deleted-visas" className="text-gray-600 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">
               Deleted Visas
