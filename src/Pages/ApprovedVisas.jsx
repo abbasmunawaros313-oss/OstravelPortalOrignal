@@ -155,6 +155,7 @@ export default function ApprovedVisas() {
       reference: booking.embassyFee,
       sentToEmbessy: booking.sentToEmbassy,
       reciveFromEmbessy: booking.receiveFromEmbassy,
+      email: booking.email || "",
     });
   };
 
@@ -209,6 +210,9 @@ export default function ApprovedVisas() {
           typeof editData.reciveFromEmbessy === "string"
             ? editData.reciveFromEmbessy.trim()
             : editData.reciveFromEmbessy || "",
+        email: typeof editData.email === "string"
+          ? editData.email.trim()
+          : editData.email || ""
       };
 
       if (editData.visaType === "Appointment") {
@@ -580,6 +584,19 @@ export default function ApprovedVisas() {
                     name="reciveFromEmbessy"
                     value={editData.reciveFromEmbessy || ""}
                     onChange={(e) => setEditData({ ...editData, reciveFromEmbessy: e.target.value })}
+                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400">Email</label>
+                <div className="relative mt-1">
+                  <FaPlane className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="email"
+                    name="Email"
+                    value={editData.email || ""}
+                    onChange={(e) => setEditData({ ...editData, email: e.target.value })}
                     className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
