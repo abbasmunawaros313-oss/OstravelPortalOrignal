@@ -335,7 +335,10 @@ const isWithinTimeRange = (bookingDate, filter) => {
       remainingFee: booking.remainingFee || "",
       paymentStatus: booking.paymentStatus || "Unpaid",
       visaStatus: booking.visaStatus || "Processing",
-      remarks: booking.remarks || ""
+      remarks: booking.remarks || "",
+      email: booking.email || "",
+     
+      profit: booking.profit || (booking.totalFee - booking.embassyFee  || "0")
     });
   };
 
@@ -937,7 +940,7 @@ const isWithinTimeRange = (bookingDate, filter) => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Received Fee</label>
                 <input
                   type="number"
-                  value={editData.receivedFee}
+                  value={editData.receivedFee || "0"}
                   onChange={(e) => setEditData({...editData, receivedFee: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                 />
@@ -951,6 +954,26 @@ const isWithinTimeRange = (bookingDate, filter) => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                 />
               </div>
+                
+                <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Profit</label>
+                <input
+                  type="number"
+                  value={editData.profit || "0"}
+                  onChange={(e) => setEditData({...editData, profit: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email </label>
+                <input
+                  type="email"
+                  value={editData.email}
+                  onChange={(e) => setEditData({...editData, email: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                />      
+            
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Payment Status</label>
                 <select
@@ -962,6 +985,7 @@ const isWithinTimeRange = (bookingDate, filter) => {
                   <option value="Unpaid">Unpaid</option>
                 </select>
               </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Visa Status</label>
                 <select
@@ -1051,7 +1075,7 @@ const isWithinTimeRange = (bookingDate, filter) => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Total Fee</label>
-                <p className="text-sm text-gray-900 font-semibold">${selectedBooking.totalFee || "0"}</p>
+                <p className="text-sm text-gray-900 font-semibold">PKR: {selectedBooking.totalFee || "0"}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Received Fee</label>
