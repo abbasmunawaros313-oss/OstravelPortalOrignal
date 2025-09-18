@@ -270,6 +270,11 @@ const isWithinTimeRange = (bookingDate, filter) => {
         case "Today":
           filtered = filtered.filter(b => new Date(b.date) >= today);
           break;
+        case "Yesterday":
+          const yesterday = new Date(today);
+          yesterday.setDate(today.getDate() - 1);
+          filtered = filtered.filter(b => new Date(b.date) >= yesterday);
+          break;
         case "This Week":
           const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
           filtered = filtered.filter(b => new Date(b.date) >= weekAgo);
@@ -494,7 +499,7 @@ const isWithinTimeRange = (bookingDate, filter) => {
   return (
     <>
     <AdminNavbar/>
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -669,6 +674,7 @@ const isWithinTimeRange = (bookingDate, filter) => {
                 >
                   <option value="All">All Time</option>
                   <option value="Today">Today</option>
+                  <option value="Yesterday">Yesterday</option>
                   <option value="This Week">This Week</option>
                   <option value="This Month">This Month</option>
                 </select>
