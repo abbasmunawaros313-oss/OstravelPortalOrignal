@@ -297,7 +297,7 @@ const isWithinTimeRange = (bookingDate, filter) => {
     }
 
     setFilteredBookings(filtered);
-  }, [allBookings, filters, searchTerm]);
+  }, [allBookings, filters, debouncedSearchTerm ]);
 
   // Get unique countries for filter
   const uniqueCountries = [...new Set(allBookings.map(b => b.country).filter(Boolean))];
