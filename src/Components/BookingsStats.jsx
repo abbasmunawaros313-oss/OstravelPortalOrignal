@@ -7,14 +7,42 @@ export default function EmployeeBookingsLeaderboard() {
   const [employeeStats, setEmployeeStats] = useState([]);
   const [sortKey, setSortKey] = useState("bookings");
   const [sortDir, setSortDir] = useState("desc");
+  const [filter, setFilter] = useState("all"); // all, today, week, month
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "bookings"), (snap) => {
       const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-      // group by employee (userId or userEmail)
+      // ---- DATE FILTER ----
+      const now = new Date();
+      const filtered = data.filter((b) => {
+        if (!b.createdAt) return true; // skip if missing
+        const created = b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+        if (filter === "today") {
+          return (
+            created.getDate() === now.getDate() &&
+            created.getMonth() === now.getMonth() &&
+            created.getFullYear() === now.getFullYear()
+          );
+        }
+        if (filter === "week") {
+          const startOfWeek = new Date(now);
+          startOfWeek.setDate(now.getDate() - now.getDay());
+          startOfWeek.setHours(0, 0, 0, 0);
+          return created >= startOfWeek && created <= now;
+        }
+        if (filter === "month") {
+          return (
+            created.getMonth() === now.getMonth() &&
+            created.getFullYear() === now.getFullYear()
+          );
+        }
+        return true; // all
+      });
+
+      // ---- GROUP BY EMPLOYEE ----
       const stats = {};
-      data.forEach((b) => {
+      filtered.forEach((b) => {
         const key = b.userId || b.userEmail;
         if (!stats[key]) {
           stats[key] = {
@@ -22,7 +50,7 @@ export default function EmployeeBookingsLeaderboard() {
             userEmail: b.userEmail,
             bookings: 0,
             approved: 0,
-            total:0,
+            total: 0,
             received: 0,
             pending: 0,
             profit: 0,
@@ -42,9 +70,9 @@ export default function EmployeeBookingsLeaderboard() {
       setEmployeeStats(Object.values(stats));
     });
     return () => unsub();
-  }, []);
+  }, [filter]); // re-run when filter changes
 
-  // sorting
+  // ---- SORTING ----
   const sorted = [...employeeStats].sort((a, b) => {
     let x = a[sortKey] || 0;
     let y = b[sortKey] || 0;
@@ -52,17 +80,31 @@ export default function EmployeeBookingsLeaderboard() {
     return x < y ? 1 : x > y ? -1 : 0;
   });
 
-  // simple number formatter (no trillions nonsense)
+  // ---- SIMPLE FORMATTER ----
   const numFmt = (val) => (val ? val.toLocaleString("en-PK") : "0");
 
   return (
     <div className="bg-gray-800 rounded-xl shadow-lg border border-gray-700 overflow-hidden">
       {/* Header + Controls */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-700">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-b border-gray-700">
         <h2 className="text-lg font-extrabold text-blue-300">
           Employee Bookings Leaderboard
         </h2>
+
         <div className="flex items-center gap-3">
+          {/* Filter */}
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="py-1 px-2 rounded bg-gray-900 border border-gray-700 text-gray-200"
+          >
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+          </select>
+
+          {/* Sort */}
           <div className="text-sm text-gray-400">Sort by:</div>
           <select
             value={sortKey}
@@ -119,7 +161,7 @@ export default function EmployeeBookingsLeaderboard() {
                   <td className="px-4 py-3 text-indigo-300 font-semibold">
                     {numFmt(emp.approved)}
                   </td>
-                   <td className="px-4 py-3 text-blue-300 font-semibold">
+                  <td className="px-4 py-3 text-blue-300 font-semibold">
                     ₨{numFmt(emp.total)}
                   </td>
                   <td className="px-4 py-3 text-blue-300 font-semibold">
@@ -135,7 +177,7 @@ export default function EmployeeBookingsLeaderboard() {
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="text-center py-6 text-gray-500">
+                <td colSpan={8} className="text-center py-6 text-gray-500">
                   No employee booking data
                 </td>
               </tr>
