@@ -437,11 +437,13 @@ function CountriesWiseDet() {
               <th className="p-3 text-left">#</th>
               <th className="p-3 text-left">Full Name</th>
               <th className="p-3 text-left">Passport</th>
-              <th className="p-3 text-left">Visa Type</th>
-              <th className="p-3 text-left">Date</th>
               <th className="p-3 text-left">Added By</th>
-              <th className="p-3 text-left">Email</th>
-              <th className="p-3 text-left">Phone</th>
+              <th className="p-3 text-left">Total Fee</th>
+              <th className="p-3 text-left">Reciveable</th>
+              
+              <th className="p-3 text-left">Remaining </th>
+              <th className="p-3 text-left">Profit</th>
+
             </tr>
           </thead>
           <tbody>
@@ -453,11 +455,13 @@ function CountriesWiseDet() {
                 <th className="p-3">{index + 1}</th>
                 <td className="p-3">{b.fullName}</td>
                 <td className="p-3">{b.passport}</td>
-                <td className="p-3">{b.visaType}</td>
-                <td className="p-3">{b.date}</td>
+  
+           
                 <td className="p-3">{b.userEmail}</td>
-                <td className="p-3">{b.email}</td>
-                <td className="p-3">{b.phone}</td>
+                <td className="p-3">{b.totalFee}</td>
+                <td className="p-3">{b.receivedFee}</td>
+                <td className="p-3">{b.remainingFee}</td>
+                <td className="p-3">{b.profit}</td>
               </tr>
             ))}
             {!filtered.length && (
