@@ -16,7 +16,7 @@ import {
 import AdminNavbar from "../Components/AdminNavbar";
 import Footer from "../Components/Footer";
 import toast from "react-hot-toast";
-
+import EmployeeBookingsLeaderboard from "../Components/BookingsStats";
 /**
  * EmployeeRecord.jsx
  * - Single-file, production-ready Employee Records admin page.
@@ -180,6 +180,7 @@ export default function EmployeeRecord() {
         visa: (data.visa || []).length,
         ticket: (data.ticket || []).length,
         umrah: (data.umrah || []).length,
+       
       };
       return {
         email,
@@ -327,6 +328,7 @@ function TotalsRow({ employees = [] }) {
   );
 
   return (
+    <>
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <div className="bg-gray-800 rounded-xl p-6 shadow-lg flex items-center justify-between transform transition hover:scale-105">
         <div>
@@ -364,7 +366,12 @@ function TotalsRow({ employees = [] }) {
         </div>
         <div className="text-4xl text-pink-400">⚡</div>
       </div>
+      
     </div>
+   <div className="mt-5">
+      <EmployeeBookingsLeaderboard/>
+   </div>
+     </>
   );
 }
 
@@ -391,6 +398,7 @@ function EmployeeCard({ email, counts = {}, total = 0, expanded = false, onToggl
               {email}
             </div>
             <div className="text-xs text-gray-400">{total} records</div>
+           
           </div>
 
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
@@ -425,6 +433,7 @@ function EmployeeCard({ email, counts = {}, total = 0, expanded = false, onToggl
           </div>
         </div>
       </div>
+     
     </div>
   );
 }
@@ -766,7 +775,7 @@ function RecordCard({ r, onViewDetails }) {
         <div className="flex">
           <div className="flex justify-center items-center gap-6 text-center mr-4">
             <div>
-              <div className="text-xs text-gray-500">Payable</div>
+              <div className="text-xs text-gray-500">Payment</div>
               <div className="font-semibold text-sky-400 text-lg">{payable.toLocaleString()}</div>
             </div>
             <div>
