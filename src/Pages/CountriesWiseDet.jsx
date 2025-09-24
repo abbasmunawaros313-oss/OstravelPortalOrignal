@@ -250,10 +250,12 @@ function CountriesWiseDet() {
     let totalRevenue = 0;
     let pendingRevenue = 0;
     let approved = 0;
+    let profit = 0;
 
     data.forEach((b) => {
       totalRevenue += Number(b.receivedFee || 0);
       pendingRevenue += Number(b.remainingFee || 0);
+      profit += Number(b.profit || 0)
       if (b.visaStatus?.toLowerCase() === "approved") approved++;
     });
 
@@ -262,6 +264,7 @@ function CountriesWiseDet() {
       approved,
       totalRevenue,
       pendingRevenue,
+      profit,
     });
   };
 
@@ -382,6 +385,15 @@ function CountriesWiseDet() {
             </p>
           </div>
           <MdWarning className="text-orange-400 text-3xl" />
+        </div>
+         <div className="bg-slate-800 p-6 rounded-xl shadow-lg flex items-center justify-between hover:scale-105 transition duration-300">
+          <div>
+            <p className="text-sm text-gray-400">Profit</p>
+            <p className="text-2xl font-bold text-orange-400">
+             PKR:  {stats.profit.toFixed(2)}
+            </p>
+          </div>
+         <MdAttachMoney className="text-emerald-400 text-3xl" />
         </div>
       </div>
 
