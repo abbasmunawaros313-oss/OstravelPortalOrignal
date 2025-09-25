@@ -390,7 +390,7 @@ function CountriesWiseDet() {
           <div>
             <p className="text-sm text-gray-400">Profit</p>
             <p className="text-2xl font-bold text-orange-400">
-             PKR:  {stats.profit.toFixed(2)}
+             PKR:  {stats.profit}
             </p>
           </div>
          <MdAttachMoney className="text-emerald-400 text-3xl" />
