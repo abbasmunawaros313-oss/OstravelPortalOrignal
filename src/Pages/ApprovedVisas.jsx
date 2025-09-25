@@ -152,7 +152,7 @@ export default function ApprovedVisas() {
     setEditing(booking.id);
     setEditData({
       ...booking,
-      reference: booking.embassyFee,
+      reference: booking.reference,
       sentToEmbessy: booking.sentToEmbassy,
       reciveFromEmbessy: booking.receiveFromEmbassy,
       email: booking.email || "",
@@ -550,7 +550,7 @@ export default function ApprovedVisas() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-400">Embassy Fee</label>
+                <label className="block text-sm font-medium text-gray-400"> Reference</label>
                 <div className="relative mt-1">
                   <FaMoneyBillWave className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
