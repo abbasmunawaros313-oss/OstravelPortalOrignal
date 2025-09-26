@@ -17,19 +17,10 @@ import AdminNavbar from "../Components/AdminNavbar";
 import Footer from "../Components/Footer";
 import toast from "react-hot-toast";
 import EmployeeBookingsLeaderboard from "../Components/BookingsStats";
-/**
- * EmployeeRecord.jsx
- * - Single-file, production-ready Employee Records admin page.
- * - Fetches bookings, ticketBookings, ummrahBookings and groups by user email.
- * - Accordion, tabs (visa/ticket/umrah), date-range + search filtering,
- * totals summary, grouping by date, export CSV, and detailed record modal.
- *
- * Styling note: uses Tailwind classes. Adjust to your design tokens if needed.
- */
+import jsPDF from "jspdf";
+import "jspdf-autotable"; // optional if you want tables
+import TicketingStates from "../Components/TicketingStates";
 
-/* ------------------------------- Helpers ------------------------------- */
-
-// safe convert firestore timestamp to YYYY-MM-DD (handles string date too)
 function toISODate(item) {
   if (!item) return null;
   if (item.date && typeof item.date === "string") {
@@ -57,6 +48,144 @@ function toISODate(item) {
   }
   return null;
 }
+
+
+const exportToPDF = (filename, rows) => {
+  if (!rows || rows.length === 0) return;
+
+  const doc = new jsPDF("p", "pt"); // portrait, points
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 40;
+  const rowHeight = 35; // increased for multi-line clarity
+  let y = 60;
+
+  // Title
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("Employee Report", pageWidth / 2, 30, { align: "center" });
+
+  const formatMoney = (val) =>
+    typeof val === "number" ? val.toFixed(2) : val === "-" ? "-" : "0.00";
+
+ const getColumns = (type) => {
+  if (type === "ticket") {
+    return [
+      { key: "No", header: "#" },
+      { key: "FullName", header: "Full Name" },
+      { key: "From", header: "From" },
+      { key: "To", header: "To" },
+      { key: "Date", header: "Date" },
+      { key: "Vendor", header: "Vendor" },
+      { key: "Payable", header: "Payable" },
+      { key: "Received", header: "Received" },
+      { key: "Remaining", header: "Remaining" },
+      { key: "Profit", header: "Profit" },
+    ];
+  } else {
+    return [
+      { key: "No", header: "#" },
+      { key: "FullName", header: "Full Name" },
+      { key: "Passport", header: "Passport" },
+      { key: "Phone", header: "Phone" },
+      { key: "Date", header: "Date" },
+      { key: "Country", header: "Country" },
+      { key: "Payable", header: "Payable" },
+      { key: "Received", header: "Received" },
+      { key: "Remaining", header: "Remaining" },
+      { key: "Profit", header: "Profit" },
+      { key: "EmbassyFee", header: "Embassy Fee" },
+    ];
+  }
+};
+
+  const drawTable = (columns, dataRows) => {
+    const colWidth = (pageWidth - margin * 2) / columns.length;
+
+    // Header
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    let x = margin;
+    columns.forEach((col) => {
+      doc.setFillColor(200, 200, 200);
+      doc.rect(x, y, colWidth, rowHeight, "F"); // filled header
+      doc.setDrawColor(0); // black border
+      doc.setLineWidth(1);
+      doc.rect(x, y, colWidth, rowHeight); // border
+      doc.setTextColor(0, 0, 0);
+      doc.text(col.header, x + 2, y + 17, { maxWidth: colWidth - 4 });
+      x += colWidth;
+    });
+    y += rowHeight;
+
+    // Data
+    doc.setFont("helvetica", "normal");
+    dataRows.forEach((row, rowIndex) => {
+      x = margin;
+
+      // Alternate row color
+      if (rowIndex % 2 === 0) {
+        doc.setFillColor(245, 245, 245);
+        doc.rect(margin, y, pageWidth - margin * 2, rowHeight, "F");
+      }
+
+      columns.forEach((col) => {
+        doc.setDrawColor(0);
+        doc.setLineWidth(0.8);
+        doc.rect(x, y, colWidth, rowHeight); // border
+
+        let text = row[col.key];
+        if (col.key === "No") text = rowIndex + 1;
+        if (["Payable", "Received", "Remaining", "Profit", "EmbassyFee"].includes(col.key)) {
+          text = formatMoney(text);
+          doc.text(text, x + colWidth - 2, y + 17, { align: "right", maxWidth: colWidth - 4 });
+        } else if (col.key === "FullName") {
+          const splitName = doc.splitTextToSize(String(text ?? ""), colWidth - 4);
+          doc.text(splitName.slice(0, 2), x + 2, y + 17); // max 2 lines
+        } else {
+          doc.text(String(text ?? ""), x + 2, y + 17, { maxWidth: colWidth - 4 });
+        }
+        x += colWidth;
+      });
+
+      y += rowHeight;
+
+      // Add new page if overflow
+      if (y + rowHeight > pageHeight - margin) {
+        doc.addPage();
+        y = 60;
+
+        // Redraw header
+        x = margin;
+        columns.forEach((col) => {
+          doc.setFillColor(200, 200, 200);
+          doc.rect(x, y, colWidth, rowHeight, "F");
+          doc.setDrawColor(0);
+          doc.setLineWidth(1);
+          doc.rect(x, y, colWidth, rowHeight);
+          doc.setTextColor(0, 0, 0);
+          doc.setFont("helvetica", "bold");
+          doc.text(col.header, x + 2, y + 17, { maxWidth: colWidth - 4 });
+          x += colWidth;
+        });
+        y += rowHeight;
+        doc.setFont("helvetica", "normal");
+      }
+    });
+  };
+
+  const ticketRows = rows.filter((r) => r.__type === "ticket");
+  const otherRows = rows.filter((r) => r.__type !== "ticket");
+
+  if (ticketRows.length > 0) drawTable(getColumns("ticket"), ticketRows);
+  if (otherRows.length > 0) {
+    if (ticketRows.length > 0) doc.addPage();
+    drawTable(getColumns("other"), otherRows);
+  }
+
+  doc.save(filename);
+};
+
 
 // CSV export utility (array of objects)
 function exportToCSV(filename, rows) {
@@ -370,6 +499,7 @@ function TotalsRow({ employees = [] }) {
     </div>
    <div className="mt-5">
       <EmployeeBookingsLeaderboard/>
+      <TicketingStates/>
    </div>
      </>
   );
@@ -512,7 +642,7 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
       received: r.receivedFee || "",
       status: r.status || r.paymentStatus || r.visaStatus || "",
       vendor: r.vendor || r.airlinePref || "",
-      extra: JSON.stringify(r),
+ 
     }));
     exportToCSV(
       `${email}_${tab}_export_${new Date().toISOString().slice(0, 10)}.csv`,
@@ -524,6 +654,40 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
     setStartDate("");
     setEndDate("");
   };
+ const handleExportPDF = () => {
+  if (!filteredRecords || filteredRecords.length === 0) {
+    toast.error("No records to export");
+    return;
+  }
+
+  const rows = filteredRecords.map((r) => {
+    const { payable, received, remaining, profit, embassyFee } = getFinancials(r);
+    return {
+      FullName: r.fullName || r.passenger?.fullName || "",
+      Passport: r.passport || r.passportNumber || "",
+      Phone: r.phone || "",
+      Email: r.email || r.userEmail || r.createdByEmail || "",
+      Type: r.__type || "",
+      Date: toISODate(r) || "",
+      Country: r.country || r.to || "",
+      From: r.from || "",
+      To: r.to || "",
+      Payable: isNaN(payable) ? 0 : payable,
+      Received: isNaN(received) ? 0 : received,
+      Remaining: remaining === "-" ? "-" : isNaN(remaining) ? 0 : remaining,
+      Status: r.status || r.paymentStatus || r.visaStatus || "",
+      Vendor: r.vendor || r.airlinePref || "",
+      EmbassyFee: typeof embassyFee === "number" ? embassyFee : "-",
+      Profit: isNaN(profit) ? 0 : profit,
+    };
+  });
+
+  exportToPDF(
+    `${email}_${tab}_export_${new Date().toISOString().slice(0, 10)}.pdf`,
+    rows
+  );
+};
+
 
   return (
     <div>
@@ -554,7 +718,10 @@ function EmployeeDetails({ emp = { visa: [], ticket: [], umrah: [] }, email, onC
             </div>
           </div>
           <button onClick={handleExportFiltered} className="flex items-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm shadow hover:brightness-95 transition transform hover:scale-105" title="Export filtered records to CSV">
-            <FaDownload /> Export
+            <FaDownload /> Export CSV
+          </button>
+           <button onClick={handleExportPDF} className="flex items-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm shadow hover:brightness-95 transition transform hover:scale-105" title="Export filtered records to CSV">
+            <FaDownload />Export PDF
           </button>
         </div>
       </div>
