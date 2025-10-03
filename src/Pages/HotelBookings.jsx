@@ -23,6 +23,9 @@ function HotelBookings() {
     payable: "",
     received: "",
     profit: "",
+    care:"",
+    careContact:"",
+    careEmail:"",
     notes: "",
   });
 
@@ -99,6 +102,9 @@ function HotelBookings() {
         payable: "",
         received: "",
         profit: "",
+        care:"",
+        careContact:"",
+        careEmail:"",
         notes: "",
       });
     } catch (err) {
@@ -269,7 +275,50 @@ function HotelBookings() {
                   />
                 </div>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Care Name</label>
+                <div className="relative">
+                  <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    name="care"
+                    value={formData.care}
+                    onChange={handleChange}
+                    placeholder="Care Name"
+                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 focus:ring-2 focus:ring-blue-500 placeholder-gray-400 border border-gray-700"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Care Contact</label>
+                <div className="relative">
+                  <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    name="careContact"
+                    value={formData.careContact}
+                    onChange={handleChange}
+                    placeholder="Care Contact"
+                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 focus:ring-2 focus:ring-blue-500 placeholder-gray-400 border border-gray-700"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Care Email</label>
+                <div className="relative">
+                  <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    name="careEmail"
+                    value={formData.careEmail}
+                    onChange={handleChange}
+                    placeholder="Care Email"
+                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 focus:ring-2 focus:ring-blue-500 placeholder-gray-400 border border-gray-700"
+                  />
+                </div>
+              </div>
             </div>
+            
 
             {/* Financial Info */}
             <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-4 gap-4">
