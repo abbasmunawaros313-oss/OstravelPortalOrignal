@@ -309,7 +309,7 @@ function HoetlDetAdminSide() {
                                                 <FaArrowUp /> PKR {b.payable}
                                             </div>
                                             <div className="text-blue-400 font-bold flex items-center gap-2">
-                                                <FaDollarSign /> PKR {b.profit}
+                                                <FaDollarSign /> PKR {Number(b.profit).toFixed(2)}
                                             </div>
                                         </td>
                                         <td className="p-3 text-center text-gray-400">{b.userEmail || "N/A"}</td>
@@ -529,7 +529,7 @@ function HoetlDetAdminSide() {
                             </div>
                             <div className="flex flex-col gap-1">
                                 <label className="text-sm font-medium text-gray-400">Profit</label>
-                                <p className="text-lg font-semibold text-blue-400">PKR {viewingBooking.profit}</p>
+                                <p className="text-lg font-semibold text-blue-400"> PKR {Number(viewingBooking.profit).toFixed(2)}</p>
                             </div>
                             <div className="col-span-1 sm:col-span-2 flex flex-col gap-1">
                                 <label className="text-sm font-medium text-gray-400">Notes</label>
