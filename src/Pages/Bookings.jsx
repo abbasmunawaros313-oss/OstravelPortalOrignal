@@ -36,7 +36,6 @@ export default function Bookings() {
     receivedFee: "",
     remainingFee: "",
     profit: "", // 👈 NEW
-    reference: "",
     paymentStatus: "",
     country: "",
     visaStatus: "",
@@ -181,7 +180,7 @@ export default function Bookings() {
         remarks: "",
         vendor: "",
         vendorContact: "",
-        reference: "",
+       
         vendorFee: "",
       });
       setErrors({});
@@ -213,9 +212,10 @@ export default function Bookings() {
       options: ["Approved", "Rejected", "Processing"],
       icon: BiCheckCircle,
     },
-    { label: "Total Fee", name: "totalFee", type: "number", placeholder: "0", icon: FaDollarSign },
-    { label: "Received Fee", name: "receivedFee", type: "number", placeholder: "0", icon: RiHandCoinLine },
+    { label: "Total Fee", name: "totalFee", type: "number", placeholder: 0, icon: FaDollarSign },
+    { label: "Received Fee", name: "receivedFee", type: "number", placeholder: 0, icon: RiHandCoinLine },
     { label: "Remaining Fee", name: "remainingFee", type: "number", readonly: true, icon: FaCreditCard },
+      { label: "Embassy Fee", name: "embassyFee", type: "number", placeholder: 0, icon: FaDollarSign },
     { label: "Profit", name: "profit", type: "number", readonly: true, icon: RiHandCoinLine }, // 👈 NEW
     {
       label: "Payment Status",
@@ -224,7 +224,7 @@ export default function Bookings() {
       options: ["Paid", "Unpaid", "Partially Paid"],
       icon: FaCreditCard,
     },
-    { label: "Embassy Fee", name: "embassyFee", type: "number", placeholder: "0", icon: FaDollarSign },
+  
     { label: "Reference", name: "reference", type: "text", placeholder: "Wajahat Ali", icon: FaLink },
     { label: "Email", name: "email", type: "email", placeholder: "john.doe@example.com", icon: FaAt },
     { label: "Phone", name: "phone", type: "text", placeholder: "03XXXXXXXXX", icon: FaPhone },
