@@ -8,6 +8,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import AdminNavbar from "../Components/AdminNavbar";
+import jsPDF from "jspdf";
 import {
     FaSearch,
     FaEdit,
@@ -64,7 +65,7 @@ function HoetlDetAdminSide() {
     const [viewingBooking, setViewingBooking] = useState(null); // New state for viewing details
     const [deletingBookingId, setDeletingBookingId] = useState(null);
     const [saving, setSaving] = useState(false);
-
+  
     useEffect(() => {
         const unsub = onSnapshot(collection(db, "HotelBookings"), (snapshot) => {
             setBookings(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
@@ -93,19 +94,50 @@ function HoetlDetAdminSide() {
         }
     };
 
-    const handleUpdate = async (e) => {
-        e.preventDefault();
-        try {
-            setSaving(true);
-            await updateDoc(doc(db, "HotelBookings", editingBooking.id), editingBooking);
-            toast.success("Booking updated!");
-            setEditingBooking(null);
-        } catch (err) {
-            toast.error("Error updating booking");
-        } finally {
-            setSaving(false);
-        }
+   useEffect(() => {
+  if (editingBooking) {
+    const received = parseFloat(editingBooking.received) || 0;
+    const payable = parseFloat(editingBooking.payable) || 0;
+    const profit = received - payable;
+    setEditingBooking({ ...editingBooking, profit });
+  }
+}, [editingBooking?.received, editingBooking?.payable]);
+
+const handleUpdate = async (e) => {
+  e.preventDefault();
+  try {
+    setSaving(true);
+
+    // Explicitly save all fields (to avoid missing care/contact etc.)
+    const updatedBooking = {
+      clientName: editingBooking.clientName || "",
+      bookingId: editingBooking.bookingId || "",
+      property: editingBooking.property || "",
+      care: editingBooking.care || "",
+      careContact: editingBooking.careContact || "",
+      careEmail: editingBooking.careEmail || "",
+      arrivalDate: editingBooking.arrivalDate || "",
+      departureDate: editingBooking.departureDate || "",
+      received: parseFloat(editingBooking.received) || 0,
+      payable: parseFloat(editingBooking.payable) || 0,
+      profit: parseFloat(editingBooking.profit) || 0,
+      notes: editingBooking.notes || "",
+      userEmail: editingBooking.userEmail || "",
+      nightsStayed: editingBooking.nightsStayed || 0,
+      numberOfRooms: editingBooking.numberOfRooms || 0,
+      numberOfAdults: editingBooking.numberOfAdults || 0,
+      numberOfChildren: editingBooking.numberOfChildren || 0,
+      paymentMethod: editingBooking.paymentMethod || "",
     };
+    await updateDoc(doc(db, "HotelBookings", editingBooking.id), updatedBooking);
+    toast.success("Booking updated!");
+    setEditingBooking(null);
+    } catch (err) {
+        toast.error("Error updating booking");
+    } finally {
+        setSaving(false);
+    }
+};
 
     const filterAndSearchBookings = () => {
         let filteredList = bookings.filter((b) => {
@@ -147,6 +179,7 @@ function HoetlDetAdminSide() {
     const totalReceived = searchedAndFilteredBookings.reduce((a, b) => a + (b.received || 0), 0);
     const totalPayable = searchedAndFilteredBookings.reduce((a, b) => a + (b.payable || 0), 0);
     const totalProfit = searchedAndFilteredBookings.reduce((a, b) => a + (b.profit || 0), 0);
+
 
     return (
       <>
@@ -261,7 +294,9 @@ function HoetlDetAdminSide() {
                         >
                             <FaCalendar /> This Month
                         </button>
+
                     </div>
+                    
                 </div>
 
                 {/* Bookings Table */}
@@ -387,6 +422,33 @@ function HoetlDetAdminSide() {
                                     type="text"
                                     value={editingBooking.property}
                                     onChange={(e) => setEditingBooking({ ...editingBooking, property: e.target.value })}
+                                    className="p-3 bg-gray-800 text-white border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm font-medium text-gray-400">Care Name</label>
+                                <input
+                                    type="text"
+                                    value={editingBooking.care}
+                                    onChange={(e) => setEditingBooking({ ...editingBooking, care: e.target.value })}
+                                    className="p-3 bg-gray-800 text-white border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm font-medium text-gray-400">Care Contact</label>
+                                <input
+                                    type="text"
+                                    value={editingBooking.careContact}
+                                    onChange={(e) => setEditingBooking({ ...editingBooking, careContact: e.target.value })}
+                                    className="p-3 bg-gray-800 text-white border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
+                                />
+                            </div>
+                                <div className="flex flex-col gap-2">
+                                <label className="text-sm font-medium text-gray-400">Care Email</label>
+                                <input
+                                    type="text"
+                                    value={editingBooking.careEmail}
+                                    onChange={(e) => setEditingBooking({ ...editingBooking, careEmail: e.target.value })}
                                     className="p-3 bg-gray-800 text-white border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
                                 />
                             </div>
@@ -531,7 +593,23 @@ function HoetlDetAdminSide() {
                                 <label className="text-sm font-medium text-gray-400">Profit</label>
                                 <p className="text-lg font-semibold text-blue-400"> PKR {Number(viewingBooking.profit).toFixed(2)}</p>
                             </div>
-                            <div className="col-span-1 sm:col-span-2 flex flex-col gap-1">
+                            <div className="flex justify-between gap-4">
+                                 <div className="col-span-1 sm:col-span-2 flex flex-col gap-1">
+                                <label className="text-sm font-medium text-gray-400">Care Name</label>
+                                <p className="text-lg font-semibold text-white">{viewingBooking.care || "N/A"}</p>
+                            </div>
+                             <div className="col-span-1 sm:col-span-2 flex flex-col gap-1">
+                                <label className="text-sm font-medium text-gray-400">Care Contact</label>
+                                <p className="text-lg font-semibold text-white">{viewingBooking.careContact || "N/A"}</p>
+                            </div>
+                            
+                            </div>
+                             <div className="col-span-1 sm:col-span-2 flex flex-col gap-1">
+                                <label className="text-sm font-medium text-gray-400">Care Email</label>
+                                <p className="text-lg font-semibold text-white">{viewingBooking.careEmail || "N/A"}</p>
+                            </div>
+                           
+                                  <div className="col-span-1 sm:col-span-2 flex flex-col gap-1">
                                 <label className="text-sm font-medium text-gray-400">Notes</label>
                                 <p className="text-lg font-semibold text-white">{viewingBooking.notes || "N/A"}</p>
                             </div>
