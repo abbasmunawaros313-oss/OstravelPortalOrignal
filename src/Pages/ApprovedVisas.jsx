@@ -67,16 +67,18 @@ export default function ApprovedVisas() {
           const dateB = b.date ? new Date(b.date).getTime() : 0;
           return dateB - dateA;
         });
+   //new code
+       const unique = [];
+      const seen = new Set();
+    for (const b of sortedData) {
+  // ✅ Corrected key includes visaType to ensure uniqueness
+   const key = `${b.passport || ""}-${b.country || ""}-${b.visaType || ""}`; 
+   if (!seen.has(key)) {
+    unique.push(b);
+    seen.add(key);
+      }
+       }
 
-        const unique = [];
-        const seen = new Set();
-        for (const b of sortedData) {
-          const key = `${b.passport || ""}-${b.country || ""}`;
-          if (!seen.has(key)) {
-            unique.push(b);
-            seen.add(key);
-          }
-        }
         setBookings(unique);
         setLoading(false);
       },
