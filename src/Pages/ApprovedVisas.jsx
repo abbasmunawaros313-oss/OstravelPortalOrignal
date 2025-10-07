@@ -19,11 +19,6 @@ import {
   FaSearch,
   FaPassport,
   FaUser,
-  FaGlobeAmericas,
-  FaPlane,
-  FaCalendarAlt,
-  FaMoneyBillWave,
-  FaIdCard,
   FaEye,
 } from "react-icons/fa";
 import Footer from "../Components/Footer";
@@ -39,13 +34,14 @@ export default function ApprovedVisas() {
   const [searchTerm, setSearchTerm] = useState("");
   const [editing, setEditing] = useState(null);
   const [editData, setEditData] = useState({});
-  const [viewing, setViewing] = useState(null); // New state for viewing details
+  const [viewing, setViewing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!user) {
       setLoading(false);
+      navigate("/login"); // Redirect if not logged in
       return;
     }
 
@@ -61,24 +57,24 @@ export default function ApprovedVisas() {
           id: doc.id,
           ...doc.data(),
         }));
-
+        
+        // Sort by date descending to ensure the latest record is processed first
         const sortedData = raw.sort((a, b) => {
           const dateA = a.date ? new Date(a.date).getTime() : 0;
           const dateB = b.date ? new Date(b.date).getTime() : 0;
           return dateB - dateA;
         });
-   //new code
-       const unique = [];
-      const seen = new Set();
-    for (const b of sortedData) {
-  // ✅ Corrected key includes visaType to ensure uniqueness
-   const key = `${b.passport || ""}-${b.country || ""}-${b.visaType || ""}`; 
-   if (!seen.has(key)) {
-    unique.push(b);
-    seen.add(key);
-      }
-       }
-
+        
+        // Keep only the most recent entry for each passport-country combination
+        const unique = [];
+        const seen = new Set();
+        for (const b of sortedData) {
+          const key = `${b.passport || ""}-${b.country || ""}`;
+          if (!seen.has(key)) {
+            unique.push(b);
+            seen.add(key);
+          }
+        }
         setBookings(unique);
         setLoading(false);
       },
@@ -90,7 +86,7 @@ export default function ApprovedVisas() {
     );
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, navigate]);
 
   useEffect(() => {
     let data = [...bookings];
@@ -129,7 +125,7 @@ export default function ApprovedVisas() {
         if (!booking.date) return false;
         const bookingDate = new Date(booking.date);
         bookingDate.setHours(0, 0, 0, 0);
-        return bookingDate >= startDate;
+        return bookingDate >= startDate && bookingDate <= today;
       });
     }
 
@@ -144,23 +140,37 @@ export default function ApprovedVisas() {
     }
     setFilteredBookings(data);
   }, [filter, dateFilter, searchTerm, bookings]);
+  
+  // NEW: Handler for the edit form with auto-calculation
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    const updatedData = { ...editData, [name]: value };
 
+    // Re-calculate fees and profit whenever a relevant field changes
+    const total = Number(updatedData.totalFee) || 0;
+    const received = Number(updatedData.receivedFee) || 0;
+    const embassy = Number(updatedData.embassyFee) || 0;
+    const vendor = Number(updatedData.vendorFee) || 0;
+
+    updatedData.remainingFee = total - received;
+    updatedData.profit = total - embassy - vendor;
+
+    setEditData(updatedData);
+  };
+
+
+  // MODIFIED: Populates edit form with all correct data
   const startEdit = (booking) => {
     if (!user || booking.userId !== user.uid) {
       toast.error("You can only edit your own records.");
       return;
     }
-
     setEditing(booking.id);
-    setEditData({
-      ...booking,
-      reference: booking.reference,
-      sentToEmbessy: booking.sentToEmbassy,
-      reciveFromEmbessy: booking.receiveFromEmbassy,
-      email: booking.email || "",
-    });
+    // Set all fields from the booking object to ensure the form is fully populated
+    setEditData({ ...booking });
   };
 
+  // MODIFIED: Rewritten for correctness and completeness
   const saveEdit = async (id) => {
     if (!user) {
       toast.error("You must be logged in to update records.");
@@ -173,60 +183,32 @@ export default function ApprovedVisas() {
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists() || docSnap.data().userId !== user.uid) {
-        toast.error("You can only update your own records.");
+        toast.error("You do not have permission to update this record.");
         return;
       }
-
+      
+      // Prepare data for update, ensuring types are correct
       const updateData = {
-        passport:
-          typeof editData.passport === "string"
-            ? editData.passport.trim()
-            : editData.passport || "",
-        fullName:
-          typeof editData.fullName === "string"
-            ? editData.fullName.trim()
-            : editData.fullName || "",
-        visaType:
-          typeof editData.visaType === "string"
-            ? editData.visaType.trim()
-            : editData.visaType || "",
-        country:
-          typeof editData.country === "string"
-            ? editData.country.trim()
-            : editData.country || "",
-        date: editData.date || "",
-        totalFee: editData.totalFee || "",
-        receivedFee: editData.receivedFee || "",
-        remainingFee: editData.remainingFee || "",
-        paymentStatus: editData.paymentStatus || "",
-        visaStatus: editData.visaStatus || "",
-        embassyFee:
-          typeof editData.reference === "string"
-            ? editData.reference.trim()
-            : editData.reference || "",
-        sentToEmbassy:
-          typeof editData.sentToEmbessy === "string"
-            ? editData.sentToEmbessy.trim()
-            : editData.sentToEmbessy || "",
-        receiveFromEmbassy:
-          typeof editData.reciveFromEmbessy === "string"
-            ? editData.reciveFromEmbessy.trim()
-            : editData.reciveFromEmbessy || "",
-        email: typeof editData.email === "string"
-          ? editData.email.trim()
-          : editData.email || ""
+        ...editData,
+        // Convert number fields to numbers, defaulting to 0
+        totalFee: Number(editData.totalFee) || 0,
+        receivedFee: Number(editData.receivedFee) || 0,
+        remainingFee: Number(editData.remainingFee) || 0,
+        profit: Number(editData.profit) || 0,
+        embassyFee: Number(editData.embassyFee) || 0,
+        vendorFee: Number(editData.vendorFee) || 0,
+        // Trim string fields to remove whitespace
+        passport: (editData.passport || "").trim(),
+        fullName: (editData.fullName || "").trim(),
+        country: (editData.country || "").trim(),
+        email: (editData.email || "").trim(),
+        phone: (editData.phone || "").trim(),
+        reference: (editData.reference || "").trim(),
+        vendor: (editData.vendor || "").trim(),
+        vendorContact: (editData.vendorContact || "").trim(),
       };
-
-      if (editData.visaType === "Appointment") {
-        updateData.vendorContact =
-          typeof editData.vendorContact === "string"
-            ? editData.vendorContact.trim()
-            : editData.vendorContact || "";
-        updateData.vendorFee = editData.vendorFee || "";
-      } else {
-        delete updateData.vendorContact;
-        delete updateData.vendorFee;
-      }
+      // remove id from data to avoid saving it back to the document
+      delete updateData.id; 
 
       await updateDoc(docRef, updateData);
 
@@ -253,17 +235,13 @@ export default function ApprovedVisas() {
   const closeView = () => {
     setViewing(null);
   };
-
+  
   const getStatusColor = (status) => {
     switch (status) {
-      case "Approved":
-        return "bg-green-600";
-      case "Rejected":
-        return "bg-red-600";
-      case "Processing":
-        return "bg-yellow-600";
-      default:
-        return "bg-gray-600";
+      case "Approved": return "bg-green-600";
+      case "Rejected": return "bg-red-600";
+      case "Processing": return "bg-yellow-600";
+      default: return "bg-gray-600";
     }
   };
 
@@ -279,8 +257,11 @@ export default function ApprovedVisas() {
       </div>
     );
   }
+// Just before return (
+const inputClass = "w-full bg-gray-800 text-white rounded-lg px-4 py-3 mt-1 border border-gray-700 focus:ring-2 focus:ring-blue-500";
 
   return (
+    
     <div className="p-6 min-h-screen bg-gray-950 text-gray-200">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -401,401 +382,219 @@ export default function ApprovedVisas() {
         )}
       </div>
 
-      {/* Edit Modal */}
-      {editing && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-gray-900 rounded-xl shadow-2xl border border-gray-800 p-8 w-full max-w-2xl relative my-8">
-            <button
-              onClick={cancelEdit}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
-            >
-              <FaTimes size={24} />
-            </button>
-            <h2 className="text-2xl font-bold text-white mb-6">Edit Visa Record</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-400">Passport Number</label>
-                <div className="relative mt-1">
-                  <FaPassport className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    name="passport"
-                    value={editData.passport || ""}
-                    onChange={(e) => setEditData({ ...editData, passport: e.target.value })}
-                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400">Full Name</label>
-                <div className="relative mt-1">
-                  <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    name="fullName"
-                    value={editData.fullName || ""}
-                    onChange={(e) => setEditData({ ...editData, fullName: e.target.value })}
-                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400">Visa Type</label>
-                <div className="relative mt-1">
-                  <FaIdCard className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    name="visaType"
-                    value={editData.visaType || ""}
-                    onChange={(e) => setEditData({ ...editData, visaType: e.target.value })}
-                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400">Country</label>
-                <div className="relative mt-1">
-                  <FaGlobeAmericas className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    name="country"
-                    value={editData.country || ""}
-                    onChange={(e) => setEditData({ ...editData, country: e.target.value })}
-                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400">Date</label>
-                <div className="relative mt-1">
-                  <FaCalendarAlt className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="date"
-                    name="date"
-                    value={editData.date || ""}
-                    onChange={(e) => setEditData({ ...editData, date: e.target.value })}
-                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400">Total Fee</label>
-                <div className="relative mt-1">
-                  <FaMoneyBillWave className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="number"
-                    name="totalFee"
-                    value={editData.totalFee || ""}
-                    onChange={(e) => setEditData({ ...editData, totalFee: e.target.value })}
-                    disabled
-                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400">Received Fee</label>
-                <div className="relative mt-1">
-                  <FaMoneyBillWave className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="number"
-                    name="receivedFee"
-                    value={editData.receivedFee || ""}
-                    onChange={(e) => setEditData({ ...editData, receivedFee: e.target.value })}
-                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400">Remaining Fee</label>
-                <div className="relative mt-1">
-                  <FaMoneyBillWave className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="number"
-                    name="remainingFee"
-                    value={editData.remainingFee || ""}
-                    onChange={(e) => setEditData({ ...editData, remainingFee: e.target.value })}
-                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-400">Payment Status</label>
-                <div className="relative mt-1">
-                  <FaMoneyBillWave className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <select
-                    name="paymentStatus"
-                    value={editData.paymentStatus || "Unpaid"}
-                    onChange={(e) => setEditData({ ...editData, paymentStatus: e.target.value })}
-                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="Paid">Paid</option>
-                    <option value="Unpaid">Unpaid</option>
-                    <option value="Partially Paid">Partially Paid</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400">Visa Status</label>
-                <div className="relative mt-1">
-                  <FaIdCard className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <select
-                    name="visaStatus"
-                    value={editData.visaStatus || "Processing"}
-                    onChange={(e) => setEditData({ ...editData, visaStatus: e.target.value })}
-                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="Approved">Approved</option>
-                    <option value="Rejected">Rejected</option>
-                    <option value="Processing">Processing</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400"> Reference</label>
-                <div className="relative mt-1">
-                  <FaMoneyBillWave className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    name="reference"
-                    value={editData.reference || ""}
-                    onChange={(e) => setEditData({ ...editData, reference: e.target.value })}
-                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400">Sent to Embassy</label>
-                <div className="relative mt-1">
-                  <FaPlane className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="date"
-                    name="sentToEmbessy"
-                    value={editData.sentToEmbessy || ""}
-                    onChange={(e) => setEditData({ ...editData, sentToEmbessy: e.target.value })}
-                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400">Received from Embassy</label>
-                <div className="relative mt-1">
-                  <FaPlane className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="date"
-                    name="reciveFromEmbessy"
-                    value={editData.reciveFromEmbessy || ""}
-                    onChange={(e) => setEditData({ ...editData, reciveFromEmbessy: e.target.value })}
-                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400">Email</label>
-                <div className="relative mt-1">
-                  <FaPlane className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="email"
-                    name="Email"
-                    value={editData.email || ""}
-                    onChange={(e) => setEditData({ ...editData, email: e.target.value })}
-                    className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              {editData.visaType === "Appointment" && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400">Vendor Contact</label>
-                    <div className="relative mt-1">
-                      <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="text"
-                        name="vendorContact"
-                        value={editData.vendorContact || ""}
-                        onChange={(e) => setEditData({ ...editData, vendorContact: e.target.value })}
-                        className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400">Vendor Fee</label>
-                    <div className="relative mt-1">
-                      <FaMoneyBillWave className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="number"
-                        name="vendorFee"
-                        value={editData.vendorFee || ""}
-                        onChange={(e) => setEditData({ ...editData, vendorFee: e.target.value })}
-                        className="w-full bg-gray-800 text-white rounded-lg pl-12 pr-4 py-3 border border-gray-700 focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="mt-8 flex justify-end gap-4">
-              <button
-                onClick={cancelEdit}
-                className="px-6 py-3 bg-gray-700 text-white rounded-xl font-semibold hover:bg-gray-600 transition-colors"
-                disabled={saving}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => saveEdit(editing)}
-                className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:bg-gray-700 disabled:cursor-not-allowed flex items-center gap-2"
-                disabled={saving}
-              >
-                {saving ? (
-                  <>
-                    <FaSpinner className="animate-spin" /> Saving...
-                  </>
-                ) : (
-                  <>
-                    <FaSave /> Save Changes
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+      {/* ===================== EDIT MODAL ===================== */}
+{editing && (
+  <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 overflow-y-auto">
+    <div className="bg-gray-900 rounded-xl shadow-2xl border border-gray-800 p-8 w-full max-w-5xl relative my-8">
+      <button
+        onClick={cancelEdit}
+        className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+      >
+        <FaTimes size={24} />
+      </button>
+      <h2 className="text-2xl font-bold text-white mb-6">Edit Visa Record</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Personal Info */}
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Full Name</label>
+          <input type="text" name="fullName" value={editData.fullName || ""} onChange={handleEditChange}
+            className="inputbox" />
         </div>
-      )}
-
-      {/* View Modal */}
-      {viewing && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-gray-900 rounded-xl shadow-2xl border border-gray-800 p-8 w-full max-w-2xl relative my-8">
-            <button
-              onClick={closeView}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
-            >
-              <FaTimes size={24} />
-            </button>
-            <h2 className="text-2xl font-bold text-white mb-6">Visa Record Details</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Personal Details */}
-              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-lg font-semibold text-white mb-2">Personal Details</h3>
-                <p className="text-sm">
-                  <b className="text-gray-400">Full Name:</b>{" "}
-                  <span className="text-white">{viewing.fullName}</span>
-                </p>
-                <p className="text-sm">
-                  <b className="text-gray-400">Passport Number:</b>{" "}
-                  <span className="text-white">{viewing.passport}</span>
-                </p>
-                <p className="text-sm">
-                  <b className="text-gray-400">Expiry Date:</b>{" "}
-                  <span className="text-white">{viewing.expiryDate || "-"}</span>
-                </p>
-                <p className="text-sm">
-                  <b className="text-gray-400">Email:</b>{" "}
-                  <span className="text-white">{viewing.email || "-"}</span>
-                </p>
-                <p className="text-sm">
-                  <b className="text-gray-400">Phone:</b>{" "}
-                  <span className="text-white">{viewing.phone || "-"}</span>
-                </p>
-              </div>
-
-              {/* Visa & Travel Details */}
-              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-lg font-semibold text-white mb-2">Visa & Travel</h3>
-                <p className="text-sm">
-                  <b className="text-gray-400">Country:</b>{" "}
-                  <span className="text-white">{viewing.country}</span>
-                </p>
-                <p className="text-sm">
-                  <b className="text-gray-400">Visa Type:</b>{" "}
-                  <span className="text-white">{viewing.visaType}</span>
-                </p>
-                <p className="text-sm">
-                  <b className="text-gray-400">Visa Status:</b>{" "}
-                  <span className={`px-2 py-0.5 text-xs font-semibold rounded-full text-white ${getStatusColor(viewing.visaStatus)}`}>
-                    {viewing.visaStatus}
-                  </span>
-                </p>
-                <p className="text-sm">
-                  <b className="text-gray-400">Application Date:</b>{" "}
-                  <span className="text-white">{viewing.date}</span>
-                </p>
-                <p className="text-sm">
-                  <b className="text-gray-400">Remarks:</b>{" "}
-                  <span className="text-white">{viewing.remarks || "-"}</span>
-                </p>
-              </div>
-
-              {/* Financials */}
-              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-lg font-semibold text-white mb-2">Financials</h3>
-                <p className="text-sm">
-                  <b className="text-gray-400">Total Fee:</b>{" "}
-                  <span className="text-green-400">{viewing.totalFee}</span>
-                </p>
-                <p className="text-sm">
-                  <b className="text-gray-400">Received Fee:</b>{" "}
-                  <span className="text-blue-400">{viewing.receivedFee}</span>
-                </p>
-                <p className="text-sm">
-                  <b className="text-gray-400">Remaining Fee:</b>{" "}
-                  <span className="text-red-400">{viewing.remainingFee}</span>
-                </p>
-                  <p className="text-sm">
-                  <b className="text-gray-400">Profit:</b>{" "}
-                  <span className="text-red-400">{viewing.profit}</span>
-                </p>
-                <p className="text-sm">
-                  <b className="text-gray-400">Payment Status:</b>{" "}
-                  <span className="text-white">{viewing.paymentStatus}</span>
-                </p>
-              </div>
-
-              {/* Embassy & Vendor Info */}
-              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-lg font-semibold text-white mb-2">Embassy & Vendor</h3>
-                <p className="text-sm">
-                  <b className="text-gray-400">Embassy Fee:</b>{" "}
-                  <span className="text-white">{viewing.embassyFee || "-"}</span>
-                </p>
-                <p className="text-sm">
-                  <b className="text-gray-400">Reference:</b>{" "}
-                  <span className="text-white">{viewing.reference || "-"}</span>
-                </p>
-                <p className="text-sm">
-                  <b className="text-gray-400">Sent to Embassy:</b>{" "}
-                  <span className="text-white">{viewing.sentToEmbassy || "-"}</span>
-                </p>
-                <p className="text-sm">
-                  <b className="text-gray-400">Received from Embassy:</b>{" "}
-                  <span className="text-white">{viewing.receiveFromEmbassy || "-"}</span>
-                </p>
-                <p className="text-sm">
-                  <b className="text-gray-400">Vendor:</b>{" "}
-                  <span className="text-white">{viewing.vendor || "-"}</span>
-                </p>
-                <p className="text-sm">
-                  <b className="text-gray-400">Vendor Contact:</b>{" "}
-                  <span className="text-white">{viewing.vendorContact || "-"}</span>
-                </p>
-                <p className="text-sm">
-                  <b className="text-gray-400">Vendor Fee:</b>{" "}
-                  <span className="text-white">{viewing.vendorFee || "-"}</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-8 flex justify-end">
-              <button
-                onClick={closeView}
-                className="px-6 py-3 bg-gray-700 text-white rounded-xl font-semibold hover:bg-gray-600 transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Passport Number</label>
+          <input type="text" name="passport" value={editData.passport || ""} onChange={handleEditChange}
+            className="inputbox" />
         </div>
-      )}
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Expiry Date</label>
+          <input type="date" name="expiryDate" value={editData.expiryDate || ""} onChange={handleEditChange}
+            className="inputbox" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Email</label>
+          <input type="email" name="email" value={editData.email || ""} onChange={handleEditChange}
+            className="inputbox" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Phone</label>
+          <input type="text" name="phone" value={editData.phone || ""} onChange={handleEditChange}
+            className="inputbox" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Country</label>
+          <input type="text" name="country" value={editData.country || ""} onChange={handleEditChange}
+            className="inputbox" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Visa Type</label>
+          <input type="text" name="visaType" value={editData.visaType || ""} onChange={handleEditChange}
+            className="inputbox" />
+        </div>
+
+        {/* Embassy Info */}
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Sent to Embassy</label>
+          <input type="text" name="sentToEmbassy" value={editData.sentToEmbassy || ""} onChange={handleEditChange}
+            className="inputbox" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Received from Embassy</label>
+          <input type="text" name="receivedFromEmbassy" value={editData.receivedFromEmbassy || ""} onChange={handleEditChange}
+            className="inputbox" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Reference</label>
+          <input type="text" name="reference" value={editData.reference || ""} onChange={handleEditChange}
+            className="inputbox" />
+        </div>
+
+        {/* Financials */}
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Total Fee</label>
+          <input type="number" name="totalFee" value={editData.totalFee || ""} onChange={handleEditChange}
+            className="inputbox" readOnly/>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Received Fee</label>
+          <input type="number" name="receivedFee" value={editData.receivedFee || ""} onChange={handleEditChange}
+            className="inputbox" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Remaining Fee</label>
+          <input type="number" readOnly value={editData.remainingFee || 0}
+            className="bg-gray-700 text-gray-300 rounded-lg px-4 py-3 mt-1 border border-gray-600 cursor-not-allowed w-full" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Embassy Fee</label>
+          <input type="number" name="embassyFee" value={editData.embassyFee || ""} onChange={handleEditChange}
+            className="inputbox" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Vendor Fee</label>
+          <input type="number" name="vendorFee" value={editData.vendorFee || ""} onChange={handleEditChange}
+            className="inputbox" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Profit</label>
+          <input type="number" readOnly value={editData.profit || 0}
+            className="bg-gray-700 text-gray-300 rounded-lg px-4 py-3 mt-1 border border-gray-600 cursor-not-allowed w-full" />
+        </div>
+
+        {/* Vendor Info */}
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Vendor Name</label>
+          <input type="text" name="vendor" value={editData.vendor || ""} onChange={handleEditChange}
+            className="inputbox" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Vendor Contact</label>
+          <input type="text" name="vendorContact" value={editData.vendorContact || ""} onChange={handleEditChange}
+            className="inputbox" />
+        </div>
+
+        {/* Statuses */}
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Visa Status</label>
+          <select name="visaStatus" value={editData.visaStatus || "Processing"} onChange={handleEditChange}
+            className="inputbox">
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Processing">Processing</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-400">Payment Status</label>
+          <select name="paymentStatus" value={editData.paymentStatus || "Unpaid"} onChange={handleEditChange}
+            className="inputbox">
+            <option value="Paid">Paid</option>
+            <option value="Unpaid">Unpaid</option>
+            <option value="Partially Paid">Partially Paid</option>
+          </select>
+        </div>
+
+        {/* Remarks */}
+        <div className="md:col-span-3">
+          <label className="block text-sm font-medium text-gray-400">Remarks</label>
+          <textarea name="remarks" rows={3} value={editData.remarks || ""} onChange={handleEditChange}
+            className="inputbox resize-none" />
+        </div>
+      </div>
+
+      <div className="mt-8 flex justify-end gap-4">
+        <button onClick={cancelEdit}
+          className="px-6 py-3 bg-gray-700 text-white rounded-xl font-semibold hover:bg-gray-600 transition-colors"
+          disabled={saving}>
+          Cancel
+        </button>
+        <button onClick={() => saveEdit(editing)}
+          className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:bg-gray-700 disabled:cursor-not-allowed flex items-center gap-2"
+          disabled={saving}>
+          {saving ? <><FaSpinner className="animate-spin" /> Saving...</> : <><FaSave /> Save Changes</>}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+      {/* ===================== VIEW MODAL ===================== */}
+{viewing && (
+  <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 overflow-y-auto">
+    <div className="bg-gray-900 rounded-xl shadow-2xl border border-gray-800 p-8 w-full max-w-3xl relative my-8">
+      <button onClick={closeView}
+        className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+        <FaTimes size={24} />
+      </button>
+      <h2 className="text-2xl font-bold text-white mb-6">Visa Record Details</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="section">
+          <h3>Personal Info</h3>
+          <p><b>Name:</b> {viewing.fullName}</p>
+          <p><b>Passport:</b> {viewing.passport}</p>
+          <p><b>Expiry:</b> {viewing.expiryDate || "-"}</p>
+          <p><b>Email:</b> {viewing.email || "-"}</p>
+          <p><b>Phone:</b> {viewing.phone || "-"}</p>
+        </div>
+
+        <div className="section">
+          <h3>Visa Details</h3>
+          <p><b>Country:</b> {viewing.country}</p>
+          <p><b>Visa Type:</b> {viewing.visaType}</p>
+          <p><b>Status:</b> <span className={`status ${getStatusColor(viewing.visaStatus)}`}>{viewing.visaStatus}</span></p>
+          <p><b>Date:</b> {viewing.date}</p>
+          <p><b>Remarks:</b> {viewing.remarks || "-"}</p>
+        </div>
+
+        <div className="section">
+          <h3>Financials</h3>
+          <p><b>Total Fee:</b> {viewing.totalFee}</p>
+          <p><b>Received Fee:</b> {viewing.receivedFee}</p>
+          <p><b>Remaining:</b> {viewing.remainingFee}</p>
+          <p><b>Profit:</b> {viewing.profit}</p>
+          <p><b>Payment Status:</b> {viewing.paymentStatus}</p>
+        </div>
+
+        <div className="section">
+          <h3>Embassy & Vendor</h3>
+          <p><b>Sent to Embassy:</b> {viewing.sentToEmbassy || "-"}</p>
+          <p><b>Received from Embassy:</b> {viewing.receivedFromEmbassy || "-"}</p>
+          <p><b>Reference:</b> {viewing.reference || "-"}</p>
+          <p><b>Embassy Fee:</b> {viewing.embassyFee}</p>
+          <p><b>Vendor:</b> {viewing.vendor || "-"}</p>
+          <p><b>Vendor Contact:</b> {viewing.vendorContact || "-"}</p>
+          <p><b>Vendor Fee:</b> {viewing.vendorFee}</p>
+        </div>
+      </div>
+
+      <div className="mt-8 flex justify-end">
+        <button onClick={closeView} className="px-6 py-3 bg-gray-700 text-white rounded-xl font-semibold hover:bg-gray-600 transition-colors">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
       <Footer />
     </div>
   );
