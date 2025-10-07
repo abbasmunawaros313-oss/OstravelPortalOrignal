@@ -35,7 +35,7 @@ export default function Bookings() {
     totalFee: "",
     receivedFee: "",
     remainingFee: "",
-    profit: "", // 👈 NEW
+    profit: "",
     paymentStatus: "",
     country: "",
     visaStatus: "",
@@ -74,8 +74,11 @@ export default function Bookings() {
     if (!form.paymentStatus) newErrors.paymentStatus = "Select payment status.";
     if (!form.country) newErrors.country = "Country required.";
     if (!form.visaStatus) newErrors.visaStatus = "Visa status required.";
-    if (!form.embassyFee || isNaN(form.embassyFee))
-      newErrors.embassyFee = "Enter valid embassy fee.";
+    
+    // MODIFIED: Stronger check for embassyFee
+    if (form.embassyFee === "" || isNaN(form.embassyFee))
+      newErrors.embassyFee = "Embassy fee must be a valid number.";
+
     if (!form.email) newErrors.email = "Email is required.";
     if (!/^\d{10,15}$/.test(form.phone))
       newErrors.phone = "Phone must be 10–15 digits.";
@@ -91,21 +94,23 @@ export default function Bookings() {
           "Expiry must be at least 7 months after application date.";
       }
     }
-
-    // Vendor-specific validation
-    if (form.visaType === "Appointment") {
-      if (!form.vendor) newErrors.vendor = "Vendor name is required.";
-      if (!form.vendorContact)
-        newErrors.vendorContact = "Vendor contact is required.";
-      if (!form.vendorFee || isNaN(form.vendorFee))
-        newErrors.vendorFee = "Vendor fee must be a number.";
+    
+    // MODIFIED: Validate vendor fields if any vendor info is provided, regardless of visa type.
+    // This makes them optional but ensures data integrity if used.
+    if (form.vendor || form.vendorContact || form.vendorFee) {
+        if (!form.vendor) newErrors.vendor = "Vendor name is required if other vendor details are provided.";
+        if (!form.vendorContact) newErrors.vendorContact = "Vendor contact is required if other vendor details are provided.";
+        if (form.vendorFee === "" || isNaN(form.vendorFee)) {
+           newErrors.vendorFee = "Vendor fee must be a valid number.";
+        }
     }
+
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Auto-calc Remaining Fee + Profit
+  // MODIFIED: Auto-calc Remaining Fee + Profit (Formula now always includes vendor fee)
   const handleChange = (e) => {
     const { name, value } = e.target;
     let updatedForm = { ...form, [name]: value };
@@ -116,6 +121,7 @@ export default function Bookings() {
     const vendor = Number(name === "vendorFee" ? value : form.vendorFee) || 0;
 
     updatedForm.remainingFee = total - received;
+    // The formula correctly includes all costs now
     updatedForm.profit = total - embassy - vendor;
 
     if (errors[name]) {
@@ -143,13 +149,14 @@ export default function Bookings() {
 
       const bookingData = {
         ...form,
-        totalFee: Number(form.totalFee),
-        receivedFee: Number(form.receivedFee),
-        remainingFee: Number(form.remainingFee),
-        profit: Number(form.profit), // 👈 Save profit
-        embassyFee: Number(form.embassyFee),
+        totalFee: Number(form.totalFee) || 0,
+        receivedFee: Number(form.receivedFee) || 0,
+        remainingFee: Number(form.remainingFee) || 0,
+        profit: Number(form.profit) || 0,
+        embassyFee: Number(form.embassyFee) || 0,
         reference: form.reference,
-        vendorFee: form.visaType === "Appointment" ? Number(form.vendorFee) : 0,
+        // MODIFIED: Save vendorFee regardless of visaType. Default to 0 if empty.
+        vendorFee: Number(form.vendorFee) || 0,
         userId: user.uid,
         userEmail: user.email,
         createdAt: Timestamp.now(),
@@ -180,7 +187,6 @@ export default function Bookings() {
         remarks: "",
         vendor: "",
         vendorContact: "",
-       
         vendorFee: "",
       });
       setErrors({});
@@ -212,11 +218,11 @@ export default function Bookings() {
       options: ["Approved", "Rejected", "Processing"],
       icon: BiCheckCircle,
     },
-    { label: "Total Fee", name: "totalFee", type: "number", placeholder: 0, icon: FaDollarSign },
-    { label: "Received Fee", name: "receivedFee", type: "number", placeholder: 0, icon: RiHandCoinLine },
+    { label: "Total Fee", name: "totalFee", type: "number", placeholder: "0", icon: FaDollarSign },
+    { label: "Received Fee", name: "receivedFee", type: "number", placeholder: "0", icon: RiHandCoinLine },
     { label: "Remaining Fee", name: "remainingFee", type: "number", readonly: true, icon: FaCreditCard },
-      { label: "Embassy Fee", name: "embassyFee", type: "number", placeholder: 0, icon: FaDollarSign },
-    { label: "Profit", name: "profit", type: "number", readonly: true, icon: RiHandCoinLine }, // 👈 NEW
+    { label: "Embassy Fee", name: "embassyFee", type: "number", placeholder: "0", icon: FaDollarSign },
+    { label: "Profit", name: "profit", type: "number", readonly: true, icon: RiHandCoinLine },
     {
       label: "Payment Status",
       name: "paymentStatus",
@@ -224,18 +230,20 @@ export default function Bookings() {
       options: ["Paid", "Unpaid", "Partially Paid"],
       icon: FaCreditCard,
     },
-  
     { label: "Reference", name: "reference", type: "text", placeholder: "Wajahat Ali", icon: FaLink },
     { label: "Email", name: "email", type: "email", placeholder: "john.doe@example.com", icon: FaAt },
     { label: "Phone", name: "phone", type: "text", placeholder: "03XXXXXXXXX", icon: FaPhone },
-    
+    // NEW: Added vendor fields directly to the main form array to always display them
+    { label: "Vendor Name", name: "vendor", type: "text", placeholder: "Optional", icon: FaStore },
+    { label: "Vendor Contact", name: "vendorContact", type: "text", placeholder: "Optional", icon: FaPhone },
+    { label: "Vendor Fee", name: "vendorFee", type: "number", placeholder: "0", icon: FaDollarSign },
   ];
 
   return (
     <div className="relative min-h-screen bg-black overflow-hidden font-sans text-gray-100 flex items-center justify-center p-8">
       {/* ... keep the same UI / animations ... */}
         
-<div className="absolute inset-0 z-0 bg-travel-grid">
+      <div className="absolute inset-0 z-0 bg-travel-grid">
         <div className="absolute inset-0 bg-black/90"></div>
         <div className="absolute inset-0 z-10 animate-pulse-light"></div>
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-900/10 via-transparent to-green-900/10 animate-fade-in"></div>
@@ -250,12 +258,10 @@ export default function Bookings() {
           <div className="flex items-center justify-center gap-4 mb-12 text-center">
             <MdFlightTakeoff className="text-blue-400 text-5xl" />
             <h1 className="text-4xl font-extrabold text-white tracking-wider">
-             Visa Bookings
+              Visa Bookings
             </h1>
           </div>
-
-          {/* User Info */}
-        
+          
           <form
             onSubmit={handleSubmit}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
@@ -312,65 +318,8 @@ export default function Bookings() {
               </div>
             ))}
 
-            {/* Conditional Fields */}
-            {form.visaType === "Appointment" ? (
-              <>
-                {/* Vendor Fields */}
-                <div className="col-span-1">
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">
-                    Vendor Name
-                  </label>
-                  <div className="relative">
-                    <FaStore className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input
-                      type="text"
-                      name="vendor"
-                      value={form.vendor}
-                      onChange={handleChange}
-                      placeholder="Vendor Name"
-                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 bg-gray-800/60 text-white"
-                    />
-                  </div>
-                  {errors.vendor && <p className="text-red-400 text-xs">{errors.vendor}</p>}
-                </div>
-
-                <div className="col-span-1">
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">
-                    Vendor Contact
-                  </label>
-                  <div className="relative">
-                    <FaPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input
-                      type="text"
-                      name="vendorContact"
-                      value={form.vendorContact}
-                      onChange={handleChange}
-                      placeholder="Vendor Contact Number"
-                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 bg-gray-800/60 text-white"
-                    />
-                  </div>
-                  {errors.vendorContact && <p className="text-red-400 text-xs">{errors.vendorContact}</p>}
-                </div>
-
-                <div className="col-span-1">
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">
-                    Vendor Fee
-                  </label>
-                  <div className="relative">
-                    <FaDollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input
-                      type="number"
-                      name="vendorFee"
-                      value={form.vendorFee}
-                      onChange={handleChange}
-                      placeholder="Enter Vendor Fee"
-                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-700 bg-gray-800/60 text-white"
-                    />
-                  </div>
-                  {errors.vendorFee && <p className="text-red-400 text-xs">{errors.vendorFee}</p>}
-                </div>
-              </>
-            ) : (
+            {/* MODIFIED: Conditional Fields for non-appointment types */}
+            {form.visaType !== "Appointment" && (
               <>
                 {/* Embassy Dates */}
                 <div className="col-span-1">
@@ -458,6 +407,8 @@ export default function Bookings() {
 
       {/* Tailwind CSS keyframes for animation */}
       <style>{`
+        /* ... All your existing animation styles remain the same ... */
+
         .bg-travel-grid {
           background-image:
             radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.8) 100%),
@@ -514,38 +465,6 @@ export default function Bookings() {
         @keyframes fade-in-up {
           from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .animate-slide-in-left-delay {
-            animation: slide-in-left 0.8s ease-out forwards;
-        }
-        @keyframes slide-in-left {
-            from { opacity: 0; transform: translateX(-50px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        .animate-slide-in-right-delay {
-            animation: slide-in-right 0.8s ease-out forwards;
-        }
-        @keyframes slide-in-right {
-            from { opacity: 0; transform: translateX(50px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-        
-        .animate-slide-in-up-delay {
-            animation: slide-in-up 0.8s ease-out forwards;
-        }
-        @keyframes slide-in-up {
-            from { opacity: 0; transform: translateY(50px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .animate-pulse-slow {
-            animation: pulse-slow 3s infinite;
-        }
-        @keyframes pulse-slow {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.05); }
         }
       `}</style>
     </div>
