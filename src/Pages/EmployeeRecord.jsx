@@ -23,6 +23,25 @@ import TicketingStates from "../Components/TicketingStates";
 
 function toISODate(item) {
   if (!item) return null;
+
+  // NEW: For tickets, always prioritize the creation date for sorting/grouping.
+  if (item.__type === 'ticket' && item.createdAt) {
+    if (item.createdAt.toDate) {
+      return item.createdAt.toDate().toISOString().slice(0, 10);
+    }
+    if (item.createdAt.seconds) {
+      return new Date(item.createdAt.seconds * 1000).toISOString().slice(0, 10);
+    }
+    if (typeof item.createdAt === "string") {
+      try {
+        return new Date(item.createdAt).toISOString().slice(0, 10);
+      } catch {
+        // Fallback if string is invalid
+      }
+    }
+  }
+
+  // --- Original logic for other record types or as a fallback ---
   if (item.date && typeof item.date === "string") {
     // already "YYYY-MM-DD"
     return item.date;
@@ -31,7 +50,6 @@ function toISODate(item) {
     return item.departure.slice(0, 10);
   }
   if (item.createdAt) {
-    // Firestore timestamp object may have .seconds or .toDate
     if (typeof item.createdAt === "string") {
       try {
         return new Date(item.createdAt).toISOString().slice(0, 10);
@@ -48,7 +66,6 @@ function toISODate(item) {
   }
   return null;
 }
-
 
 const exportToPDF = (filename, rows) => {
   if (!rows || rows.length === 0) return;
