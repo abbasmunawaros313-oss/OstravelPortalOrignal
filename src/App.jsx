@@ -30,7 +30,7 @@ import ViewAllMedicalBookings from "./Pages/ViewAllMedicalBookings";
 import AdminSideMedicalInsurrance from "./Pages/AdminSideMedicalInsurrance";
 import CustomerCountryPage from "./Pages/CustomerCountryPage";
 import SendEmailPage  from "./Pages/SendEmailPage";
-
+import DetaliedSearchPage from "./Pages/DetaliedSearchPage";
 // 🔒 Protected Route
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -110,11 +110,20 @@ function AdminRoutes() {
           }
         
         />
+    
        <Route
-  path="/send-email/:country"
-  element={
-    <ProtectedRoute>
-      <SendEmailPage />
+          path="/detailed-search"
+          element={
+            <ProtectedRoute>
+              <DetaliedSearchPage/>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/send-email/:country"
+          element={
+            <ProtectedRoute>
+              <SendEmailPage />
     </ProtectedRoute>
   }
 />
